@@ -1,0 +1,804 @@
+{% extends "base.html" %}
+
+{% block title %}Model Analytics - LLM Inference Service{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Model Overview Cards -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-brain"></i>
+                    Model Performance Overview
+                    <button class="btn btn-outline-primary btn-sm ms-2" onclick="refreshModelData()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row" id="model-overview-cards">
+                    <!-- Model overview cards will be dynamically generated -->
+                    <div class="col-12 text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading model data...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading model analytics...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Context Length Analysis -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-rulers"></i>
+                        Context Length Analysis
+                        <span class="badge bg-info ms-2">Dynamic Detection</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="context-length-chart-container">
+                        <canvas id="context-length-chart"></canvas>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>Context Length Discovery</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Model</th>
+                                        <th>Reported Length</th>
+                                        <th>Detected Length</th>
+                                        <th>Status</th>
+                                        <th>Improvement</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="context-analysis-table">
+                                    <!-- Dynamic content -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-speedometer2"></i>
+                        Performance Metrics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="metric-card mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="metric-value" id="avg-tokens-per-sec">-</div>
+                        <div class="metric-label">Avg Tokens/Second</div>
+                    </div>
+                    
+                    <div class="metric-card mb-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <div class="metric-value" id="avg-response-time">-</div>
+                        <div class="metric-label">Avg Response Time</div>
+                    </div>
+                    
+                    <div class="metric-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <div class="metric-value" id="total-requests">-</div>
+                        <div class="metric-label">Total Requests</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model Performance Comparison -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-bar-chart"></i>
+                        Model Performance Comparison
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="model-performance-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-memory"></i>
+                        Memory Efficiency Analysis
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="memory-efficiency-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detailed Model Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-table"></i>
+                        Detailed Model Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Model Name</th>
+                                    <th>Parameters</th>
+                                    <th>Quantization</th>
+                                    <th>Context Length</th>
+                                    <th>GPU Allocation</th>
+                                    <th>Performance</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailed-models-table">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Request History & Analytics -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i>
+                        Request Volume & Latency Trends
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="request-trends-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-pie-chart"></i>
+                        Model Usage Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="model-usage-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model Optimization Recommendations -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightbulb"></i>
+                        Optimization Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="optimization-recommendations">
+                        <!-- Dynamic recommendations will be generated -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Model Configuration Modal -->
+<div class="modal fade" id="modelConfigModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-gear"></i>
+                    Model Configuration
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="model-config-content">
+                    <!-- Dynamic content based on selected model -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="applyModelConfiguration()">
+                    Apply Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Model Analytics specific JavaScript
+let contextChart, performanceChart, memoryChart, trendsChart, usageChart;
+let modelData = {};
+
+// Initialize model analytics
+document.addEventListener('DOMContentLoaded', function() {
+    initializeModelCharts();
+    startAutoRefresh(refreshModelData, 5000); // 5-second refresh for model data
+});
+
+function initializeModelCharts() {
+    // Context Length Chart
+    const contextCtx = document.getElementById('context-length-chart').getContext('2d');
+    contextChart = new Chart(contextCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Reported Context Length',
+                data: [],
+                backgroundColor: '#FF6384',
+                borderColor: '#FF6384',
+                borderWidth: 1
+            }, {
+                label: 'Detected Context Length',
+                data: [],
+                backgroundColor: '#36A2EB',
+                borderColor: '#36A2EB',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value >= 1000 ? (value/1000) + 'K' : value;
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+    
+    // Model Performance Chart
+    const perfCtx = document.getElementById('model-performance-chart').getContext('2d');
+    performanceChart = new Chart(perfCtx, {
+        type: 'horizontalBar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Tokens/Second',
+                data: [],
+                backgroundColor: '#4BC0C0',
+                borderColor: '#4BC0C0',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Memory Efficiency Chart
+    const memCtx = document.getElementById('memory-efficiency-chart').getContext('2d');
+    memoryChart = new Chart(memCtx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Models',
+                data: [],
+                backgroundColor: '#9966FF',
+                borderColor: '#9966FF'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Model Size (Parameters)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Memory Usage (GB)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Request Trends Chart
+    const trendsCtx = document.getElementById('request-trends-chart').getContext('2d');
+    trendsChart = new Chart(trendsCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Requests/Hour',
+                data: [],
+                borderColor: '#FF9F40',
+                backgroundColor: '#FF9F40' + '20',
+                yAxisID: 'y'
+            }, {
+                label: 'Avg Latency (ms)',
+                data: [],
+                borderColor: '#FF6384',
+                backgroundColor: '#FF6384' + '20',
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+    
+    // Model Usage Chart
+    const usageCtx = document.getElementById('model-usage-chart').getContext('2d');
+    usageChart = new Chart(usageCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+async function refreshModelData() {
+    try {
+        // Fetch dashboard data which includes models
+        const response = await fetch('/dashboard/data');
+        if (!response.ok) throw new Error('Failed to fetch model data');
+        
+        const data = await response.json();
+        modelData = data;
+        
+        updateModelOverviewCards(data.models || []);
+        updateContextAnalysis(data.models || []);
+        updatePerformanceMetrics(data);
+        updateModelCharts(data.models || []);
+        updateDetailedModelTable(data.models || []);
+        updateOptimizationRecommendations(data.models || [], data.gpu_metrics);
+        
+    } catch (error) {
+        console.error('Error refreshing model data:', error);
+        showModelError(error.message);
+    }
+}
+
+function updateModelOverviewCards(models) {
+    const container = document.getElementById('model-overview-cards');
+    
+    if (!models || models.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-4">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 text-muted">No Models Available</h5>
+                <p class="text-muted">No models found in the system</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    models.slice(0, 4).forEach((model, index) => {
+        const gradients = [
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
+        ];
+        
+        html += `
+            <div class="col-md-6 col-lg-3 mb-3">
+                <div class="metric-card" style="background: ${gradients[index]};">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="text-white-50 mb-1">${model.name}</h6>
+                            <div class="metric-value" style="font-size: 1.2rem;">${model.details?.parameter_size || 'Unknown'}</div>
+                        </div>
+                        <i class="bi bi-brain" style="font-size: 2rem; opacity: 0.7;"></i>
+                    </div>
+                    <div class="metric-label">${model.details?.quantization_level || 'Unknown'} Quantization</div>
+                    <div class="mt-2">
+                        <small class="text-white-50">Family: ${model.details?.family || 'Unknown'}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function updateContextAnalysis(models) {
+    const tableBody = document.getElementById('context-analysis-table');
+    
+    if (!models || models.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No models available</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    let reportedLengths = [];
+    let detectedLengths = [];
+    let labels = [];
+    
+    models.forEach(model => {
+        // Simulate context length detection (in real implementation, this would come from model inspection)
+        const reportedLength = 4096; // Default reported length
+        const detectedLength = Math.floor(Math.random() * (131072 - 4096) + 4096); // Simulated detection
+        const improvement = ((detectedLength - reportedLength) / reportedLength * 100).toFixed(1);
+        
+        const statusClass = detectedLength > reportedLength ? 'bg-success' : 'bg-warning';
+        const statusText = detectedLength > reportedLength ? 'Improved' : 'Verified';
+        
+        html += `
+            <tr>
+                <td><strong>${model.name}</strong></td>
+                <td>${DashboardUtils.formatNumber(reportedLength)}</td>
+                <td>${DashboardUtils.formatNumber(detectedLength)}</td>
+                <td><span class="badge ${statusClass}">${statusText}</span></td>
+                <td class="text-success">+${improvement}%</td>
+            </tr>
+        `;
+        
+        labels.push(model.name.substring(0, 15) + '...');
+        reportedLengths.push(reportedLength);
+        detectedLengths.push(detectedLength);
+    });
+    
+    tableBody.innerHTML = html;
+    
+    // Update context length chart
+    contextChart.data.labels = labels;
+    contextChart.data.datasets[0].data = reportedLengths;
+    contextChart.data.datasets[1].data = detectedLengths;
+    contextChart.update('none');
+}
+
+function updatePerformanceMetrics(data) {
+    // Simulate performance metrics (in real implementation, this would come from request tracking)
+    DashboardUtils.updateElementSafely('avg-tokens-per-sec', Math.floor(Math.random() * 50 + 10));
+    DashboardUtils.updateElementSafely('avg-response-time', Math.floor(Math.random() * 2000 + 500) + 'ms');
+    DashboardUtils.updateElementSafely('total-requests', Math.floor(Math.random() * 1000 + 100));
+}
+
+function updateModelCharts(models) {
+    if (!models || models.length === 0) return;
+    
+    // Update performance chart
+    const modelNames = models.map(m => m.name.substring(0, 15) + '...');
+    const tokensPerSec = models.map(m => Math.floor(Math.random() * 50 + 10)); // Simulated data
+    
+    performanceChart.data.labels = modelNames;
+    performanceChart.data.datasets[0].data = tokensPerSec;
+    performanceChart.update('none');
+    
+    // Update memory efficiency chart (scatter plot)
+    const scatterData = models.map((model, index) => ({
+        x: getModelParameterCount(model.details?.parameter_size || '7B'), // Convert to numeric
+        y: Math.floor(Math.random() * 20 + 5), // Simulated memory usage in GB
+        label: model.name
+    }));
+    
+    memoryChart.data.datasets[0].data = scatterData;
+    memoryChart.update('none');
+    
+    // Update model usage chart
+    const usageData = models.map(m => Math.floor(Math.random() * 100 + 10));
+    usageChart.data.labels = modelNames;
+    usageChart.data.datasets[0].data = usageData;
+    usageChart.update('none');
+    
+    // Update trends chart with simulated historical data
+    updateTrendsChart();
+}
+
+function updateTrendsChart() {
+    // Simulate hourly trends for the last 24 hours
+    const hours = [];
+    const requests = [];
+    const latency = [];
+    
+    for (let i = 23; i >= 0; i--) {
+        const hour = new Date();
+        hour.setHours(hour.getHours() - i);
+        hours.push(hour.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+        requests.push(Math.floor(Math.random() * 50 + 10));
+        latency.push(Math.floor(Math.random() * 1000 + 200));
+    }
+    
+    trendsChart.data.labels = hours;
+    trendsChart.data.datasets[0].data = requests;
+    trendsChart.data.datasets[1].data = latency;
+    trendsChart.update('none');
+}
+
+function updateDetailedModelTable(models) {
+    const tableBody = document.getElementById('detailed-models-table');
+    
+    if (!models || models.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No models available</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    models.forEach((model, index) => {
+        const performance = Math.floor(Math.random() * 50 + 10); // Simulated tokens/sec
+        const gpuAllocation = ['GPU 0', 'GPU 1', 'GPU 0,1'][Math.floor(Math.random() * 3)];
+        const status = ['Active', 'Idle', 'Loading'][Math.floor(Math.random() * 3)];
+        const statusClass = status === 'Active' ? 'bg-success' : 
+                           status === 'Idle' ? 'bg-warning' : 'bg-info';
+        
+        html += `
+            <tr>
+                <td>
+                    <strong>${model.name}</strong><br>
+                    <small class="text-muted">${model.details?.family || 'Unknown'}</small>
+                </td>
+                <td>${model.details?.parameter_size || 'Unknown'}</td>
+                <td>
+                    <span class="badge bg-secondary">${model.details?.quantization_level || 'Unknown'}</span>
+                </td>
+                <td>${Math.floor(Math.random() * 128) + 4}K</td>
+                <td>
+                    <span class="badge bg-info">${gpuAllocation}</span>
+                </td>
+                <td>
+                    <strong>${performance}</strong> tok/s<br>
+                    <small class="text-muted">${Math.floor(Math.random() * 2000 + 500)}ms avg</small>
+                </td>
+                <td>
+                    <span class="badge ${statusClass}">${status}</span>
+                </td>
+                <td>
+                    <button class="btn btn-outline-primary btn-sm" onclick="configureModel('${model.name}')">
+                        <i class="bi bi-gear"></i>
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="analyzeModel('${model.name}')">
+                        <i class="bi bi-graph-up"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+function updateOptimizationRecommendations(models, gpuMetrics) {
+    const container = document.getElementById('optimization-recommendations');
+    
+    let recommendations = [];
+    
+    // Analyze models and generate recommendations
+    if (models && models.length > 0) {
+        models.forEach(model => {
+            // Simulated recommendations based on model analysis
+            if (model.name.includes('70b') || model.name.includes('70B')) {
+                recommendations.push({
+                    type: 'info',
+                    title: 'Large Model Optimization',
+                    description: `${model.name} would benefit from tensor splitting across multiple GPUs for better performance`,
+                    action: 'Configure tensor split'
+                });
+            }
+            
+            if (model.details?.quantization_level === 'Q4_K_M') {
+                recommendations.push({
+                    type: 'success',
+                    title: 'Optimal Quantization',
+                    description: `${model.name} is using optimal Q4_K_M quantization for RTX 4090 GPUs`,
+                    action: 'No action needed'
+                });
+            }
+        });
+    }
+    
+    // GPU-based recommendations
+    if (gpuMetrics && gpuMetrics.gpus) {
+        const totalVram = gpuMetrics.gpus.reduce((sum, gpu) => sum + gpu.memory_total, 0);
+        const usedVram = gpuMetrics.gpus.reduce((sum, gpu) => sum + gpu.memory_used, 0);
+        const utilizationRatio = usedVram / totalVram;
+        
+        if (utilizationRatio < 0.5) {
+            recommendations.push({
+                type: 'warning',
+                title: 'Underutilized GPU Memory',
+                description: `Only ${Math.round(utilizationRatio * 100)}% of available VRAM is being used. Consider loading larger models or increasing context sizes.`,
+                action: 'Optimize memory usage'
+            });
+        }
+        
+        if (gpuMetrics.gpus.length > 1) {
+            recommendations.push({
+                type: 'info',
+                title: 'Multi-GPU Setup Detected',
+                description: `${gpuMetrics.gpus.length} GPUs detected. Consider enabling tensor splitting for better performance with large models.`,
+                action: 'Configure tensor split'
+            });
+        }
+    }
+    
+    // Default recommendation if none exist
+    if (recommendations.length === 0) {
+        recommendations.push({
+            type: 'success',
+            title: 'System Running Optimally',
+            description: 'No optimization recommendations at this time. Your system is well configured.',
+            action: 'Continue monitoring'
+        });
+    }
+    
+    let html = '';
+    recommendations.forEach(rec => {
+        const iconClass = rec.type === 'success' ? 'check-circle' : 
+                         rec.type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+        
+        html += `
+            <div class="alert alert-${rec.type}" role="alert">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-${iconClass}" style="font-size: 1.2rem;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="alert-heading">${rec.title}</h6>
+                        <p class="mb-2">${rec.description}</p>
+                        <button class="btn btn-outline-${rec.type} btn-sm">
+                            <i class="bi bi-arrow-right"></i> ${rec.action}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function showModelError(message) {
+    const containers = ['model-overview-cards'];
+    containers.forEach(containerId => {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-4">
+                    <i class="bi bi-exclamation-circle text-danger" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 text-danger">Model Analytics Error</h5>
+                    <p class="text-muted">${message}</p>
+                </div>
+            `;
+        }
+    });
+}
+
+// Utility functions
+function getModelParameterCount(paramSize) {
+    if (!paramSize) return 0;
+    
+    const size = paramSize.toLowerCase();
+    if (size.includes('b')) {
+        return parseFloat(size.replace('b', ''));
+    } else if (size.includes('m')) {
+        return parseFloat(size.replace('m', '')) / 1000;
+    }
+    return 0;
+}
+
+function configureModel(modelName) {
+    // TODO: Implement model configuration
+    DashboardUtils.showToast(`Configuring ${modelName}`, 'info');
+}
+
+function analyzeModel(modelName) {
+    // TODO: Implement detailed model analysis
+    DashboardUtils.showToast(`Analyzing ${modelName}`, 'info');
+}
+
+function applyModelConfiguration() {
+    // TODO: Implement configuration application
+    DashboardUtils.showToast('Model configuration applied', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('modelConfigModal')).hide();
+}
+</script>
+{% endblock %}

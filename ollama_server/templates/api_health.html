@@ -1,0 +1,860 @@
+{% extends "base.html" %}
+
+{% block title %}API Health Monitor - LLM Inference Service{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- API Status Overview -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-cloud-check"></i>
+                    API Endpoints Health Status
+                    <span class="badge bg-success ms-2 real-time-indicator">Live Monitoring</span>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row" id="api-status-cards">
+                    <!-- API status cards will be dynamically generated -->
+                    <div class="col-12 text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Checking API health...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Monitoring API endpoints...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Response Time Charts -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-speedometer2"></i>
+                        Response Time Trends
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="response-time-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-pie-chart"></i>
+                        Request Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="request-distribution-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Error Rate and Throughput -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Error Rate Analysis
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="error-rate-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i>
+                        Throughput Analysis
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="throughput-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detailed API Metrics Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-table"></i>
+                        Detailed API Metrics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>API Endpoint</th>
+                                    <th>Status</th>
+                                    <th>Response Time</th>
+                                    <th>Requests/Min</th>
+                                    <th>Success Rate</th>
+                                    <th>Error Rate</th>
+                                    <th>Last Check</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="api-metrics-table">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- API Compatibility & Features -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-check2-square"></i>
+                        API Compatibility Matrix
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th>OpenAI</th>
+                                    <th>Ollama</th>
+                                    <th>vLLM</th>
+                                    <th>HuggingFace</th>
+                                </tr>
+                            </thead>
+                            <tbody id="compatibility-matrix">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-activity"></i>
+                        Real-Time Activity Log
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="activity-log" style="height: 300px; overflow-y: auto;">
+                        <!-- Real-time activity log -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Health Check Configuration -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-gear"></i>
+                        Health Check Configuration
+                        <button class="btn btn-outline-primary btn-sm ms-2" onclick="openHealthConfigModal()">
+                            <i class="bi bi-sliders"></i> Configure
+                        </button>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="metric-card mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <div class="metric-value" id="check-interval">5s</div>
+                                <div class="metric-label">Check Interval</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card mb-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <div class="metric-value" id="timeout-threshold">10s</div>
+                                <div class="metric-label">Timeout Threshold</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card mb-3" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <div class="metric-value" id="retry-attempts">3</div>
+                                <div class="metric-label">Retry Attempts</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card mb-3" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                <div class="metric-value" id="alert-threshold">95%</div>
+                                <div class="metric-label">Alert Threshold</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Health Check Configuration Modal -->
+<div class="modal fade" id="healthConfigModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-sliders"></i>
+                    Health Check Configuration
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Monitoring Settings</h6>
+                        
+                        <div class="mb-3">
+                            <label for="check-interval-input" class="form-label">Check Interval (seconds)</label>
+                            <input type="number" class="form-control" id="check-interval-input" value="5" min="1" max="60">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="timeout-input" class="form-label">Request Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="timeout-input" value="10" min="1" max="30">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="retry-input" class="form-label">Retry Attempts</label>
+                            <input type="number" class="form-control" id="retry-input" value="3" min="1" max="10">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6>Alert Settings</h6>
+                        
+                        <div class="mb-3">
+                            <label for="alert-threshold-input" class="form-label">Success Rate Threshold (%)</label>
+                            <input type="number" class="form-control" id="alert-threshold-input" value="95" min="50" max="100">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="response-time-threshold" class="form-label">Response Time Threshold (ms)</label>
+                            <input type="number" class="form-control" id="response-time-threshold" value="5000" min="100" max="30000">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enable-notifications" checked>
+                                <label class="form-check-label" for="enable-notifications">
+                                    Enable Browser Notifications
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>API Endpoints to Monitor</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="monitor-openai" checked>
+                            <label class="form-check-label" for="monitor-openai">OpenAI API (/v1/chat/completions)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="monitor-ollama" checked>
+                            <label class="form-check-label" for="monitor-ollama">Ollama API (/api/generate, /api/chat)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="monitor-vllm" checked>
+                            <label class="form-check-label" for="monitor-vllm">vLLM API (/v1/completions)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="monitor-huggingface" checked>
+                            <label class="form-check-label" for="monitor-huggingface">HuggingFace TGI (/generate)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="resetHealthConfig()">Reset to Defaults</button>
+                <button type="button" class="btn btn-primary" onclick="applyHealthConfig()">Apply Configuration</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Test Modal -->
+<div class="modal fade" id="apiTestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-play-circle"></i>
+                    API Endpoint Test
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="api-test-content">
+                    <!-- Dynamic test content -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="runAPITest()">Run Test</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// API Health Monitor specific JavaScript
+let responseTimeChart, distributionChart, errorRateChart, throughputChart;
+let apiHealthData = {};
+let activityLog = [];
+
+// Initialize API health monitor
+document.addEventListener('DOMContentLoaded', function() {
+    initializeAPICharts();
+    initializeCompatibilityMatrix();
+    startAutoRefresh(refreshAPIHealth, 3000); // 3-second refresh for API health
+});
+
+function initializeAPICharts() {
+    // Response Time Chart
+    const responseCtx = document.getElementById('response-time-chart').getContext('2d');
+    responseTimeChart = new Chart(responseCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'OpenAI API',
+                    data: [],
+                    borderColor: '#10b981',
+                    backgroundColor: '#10b981' + '20',
+                    fill: false
+                },
+                {
+                    label: 'Ollama API',
+                    data: [],
+                    borderColor: '#f59e0b',
+                    backgroundColor: '#f59e0b' + '20',
+                    fill: false
+                },
+                {
+                    label: 'vLLM API',
+                    data: [],
+                    borderColor: '#06b6d4',
+                    backgroundColor: '#06b6d4' + '20',
+                    fill: false
+                },
+                {
+                    label: 'HuggingFace API',
+                    data: [],
+                    borderColor: '#ef4444',
+                    backgroundColor: '#ef4444' + '20',
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + 'ms';
+                        }
+                    }
+                }
+            },
+            animation: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+    
+    // Request Distribution Chart
+    const distCtx = document.getElementById('request-distribution-chart').getContext('2d');
+    distributionChart = new Chart(distCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['OpenAI API', 'Ollama API', 'vLLM API', 'HuggingFace API'],
+            datasets: [{
+                data: [0, 0, 0, 0],
+                backgroundColor: ['#10b981', '#f59e0b', '#06b6d4', '#ef4444'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Error Rate Chart
+    const errorCtx = document.getElementById('error-rate-chart').getContext('2d');
+    errorRateChart = new Chart(errorCtx, {
+        type: 'bar',
+        data: {
+            labels: ['OpenAI', 'Ollama', 'vLLM', 'HuggingFace'],
+            datasets: [{
+                label: 'Error Rate (%)',
+                data: [],
+                backgroundColor: '#ef4444',
+                borderColor: '#ef4444',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Throughput Chart
+    const throughputCtx = document.getElementById('throughput-chart').getContext('2d');
+    throughputChart = new Chart(throughputCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Requests/Minute',
+                data: [],
+                borderColor: '#8b5cf6',
+                backgroundColor: '#8b5cf6' + '20',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            animation: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function initializeCompatibilityMatrix() {
+    const features = [
+        { name: 'Chat Completions', openai: true, ollama: true, vllm: true, huggingface: true },
+        { name: 'Streaming', openai: true, ollama: true, vllm: true, huggingface: true },
+        { name: 'Function Calling', openai: true, ollama: false, vllm: true, huggingface: false },
+        { name: 'System Messages', openai: true, ollama: true, vllm: true, huggingface: true },
+        { name: 'Temperature Control', openai: true, ollama: true, vllm: true, huggingface: true },
+        { name: 'Max Tokens', openai: true, ollama: true, vllm: true, huggingface: true },
+        { name: 'Stop Sequences', openai: true, ollama: true, vllm: true, huggingface: true },
+        { name: 'Think Tags', openai: false, ollama: true, vllm: false, huggingface: false }
+    ];
+    
+    const tbody = document.getElementById('compatibility-matrix');
+    let html = '';
+    
+    features.forEach(feature => {
+        html += `
+            <tr>
+                <td><strong>${feature.name}</strong></td>
+                <td>${getCompatibilityIcon(feature.openai)}</td>
+                <td>${getCompatibilityIcon(feature.ollama)}</td>
+                <td>${getCompatibilityIcon(feature.vllm)}</td>
+                <td>${getCompatibilityIcon(feature.huggingface)}</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+function getCompatibilityIcon(supported) {
+    return supported ? 
+        '<i class="bi bi-check-circle text-success"></i>' : 
+        '<i class="bi bi-x-circle text-danger"></i>';
+}
+
+async function refreshAPIHealth() {
+    try {
+        // In a real implementation, this would check actual API endpoints
+        // For now, we'll simulate API health data
+        const simulatedData = generateSimulatedAPIHealth();
+        apiHealthData = simulatedData;
+        
+        updateAPIStatusCards(simulatedData.endpoints);
+        updateAPIMetricsTable(simulatedData.endpoints);
+        updateAPICharts(simulatedData);
+        updateActivityLog(simulatedData);
+        
+    } catch (error) {
+        console.error('Error refreshing API health:', error);
+        showAPIError(error.message);
+    }
+}
+
+function generateSimulatedAPIHealth() {
+    const endpoints = [
+        {
+            name: 'OpenAI API',
+            path: '/v1/chat/completions',
+            status: Math.random() > 0.1 ? 'healthy' : 'error',
+            responseTime: Math.floor(Math.random() * 500 + 50),
+            requestsPerMin: Math.floor(Math.random() * 50 + 10),
+            successRate: Math.floor(Math.random() * 10 + 90),
+            errorRate: Math.floor(Math.random() * 10),
+            lastCheck: new Date().toISOString(),
+            color: '#10b981'
+        },
+        {
+            name: 'Ollama API',
+            path: '/api/generate',
+            status: Math.random() > 0.05 ? 'healthy' : 'warning',
+            responseTime: Math.floor(Math.random() * 400 + 30),
+            requestsPerMin: Math.floor(Math.random() * 40 + 15),
+            successRate: Math.floor(Math.random() * 8 + 92),
+            errorRate: Math.floor(Math.random() * 8),
+            lastCheck: new Date().toISOString(),
+            color: '#f59e0b'
+        },
+        {
+            name: 'vLLM API',
+            path: '/v1/completions',
+            status: Math.random() > 0.15 ? 'healthy' : 'warning',
+            responseTime: Math.floor(Math.random() * 600 + 100),
+            requestsPerMin: Math.floor(Math.random() * 30 + 5),
+            successRate: Math.floor(Math.random() * 15 + 85),
+            errorRate: Math.floor(Math.random() * 15),
+            lastCheck: new Date().toISOString(),
+            color: '#06b6d4'
+        },
+        {
+            name: 'HuggingFace TGI',
+            path: '/generate',
+            status: Math.random() > 0.2 ? 'healthy' : 'error',
+            responseTime: Math.floor(Math.random() * 800 + 200),
+            requestsPerMin: Math.floor(Math.random() * 20 + 2),
+            successRate: Math.floor(Math.random() * 20 + 80),
+            errorRate: Math.floor(Math.random() * 20),
+            lastCheck: new Date().toISOString(),
+            color: '#ef4444'
+        }
+    ];
+    
+    return {
+        endpoints: endpoints,
+        timestamp: new Date().toISOString(),
+        overallHealth: endpoints.every(e => e.status === 'healthy') ? 'healthy' : 'degraded'
+    };
+}
+
+function updateAPIStatusCards(endpoints) {
+    const container = document.getElementById('api-status-cards');
+    
+    let html = '';
+    endpoints.forEach(endpoint => {
+        const statusIcon = endpoint.status === 'healthy' ? 'check-circle' : 
+                          endpoint.status === 'warning' ? 'exclamation-triangle' : 'x-circle';
+        const statusColor = endpoint.status === 'healthy' ? 'success' : 
+                           endpoint.status === 'warning' ? 'warning' : 'danger';
+        const cardBorder = endpoint.status === 'healthy' ? 'border-success' : 
+                          endpoint.status === 'warning' ? 'border-warning' : 'border-danger';
+        
+        html += `
+            <div class="col-md-6 col-lg-3 mb-3">
+                <div class="card h-100 ${cardBorder}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="card-title">${endpoint.name}</h6>
+                                <p class="card-text text-muted small">${endpoint.path}</p>
+                            </div>
+                            <i class="bi bi-${statusIcon} text-${statusColor}" style="font-size: 1.5rem;"></i>
+                        </div>
+                        
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <div class="h5 mb-0">${endpoint.responseTime}ms</div>
+                                    <small class="text-muted">Response</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="h5 mb-0">${endpoint.successRate}%</div>
+                                <small class="text-muted">Success</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <div class="progress" style="height: 4px;">
+                                <div class="progress-bar bg-${statusColor}" 
+                                     style="width: ${endpoint.successRate}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function updateAPIMetricsTable(endpoints) {
+    const tbody = document.getElementById('api-metrics-table');
+    
+    let html = '';
+    endpoints.forEach(endpoint => {
+        const statusBadge = endpoint.status === 'healthy' ? 'bg-success' : 
+                           endpoint.status === 'warning' ? 'bg-warning' : 'bg-danger';
+        
+        html += `
+            <tr>
+                <td>
+                    <strong>${endpoint.name}</strong><br>
+                    <small class="text-muted">${endpoint.path}</small>
+                </td>
+                <td>
+                    <span class="badge ${statusBadge}">${endpoint.status.toUpperCase()}</span>
+                </td>
+                <td>
+                    <strong>${endpoint.responseTime}ms</strong>
+                </td>
+                <td>
+                    <strong>${endpoint.requestsPerMin}</strong>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="progress me-2" style="width: 60px; height: 8px;">
+                            <div class="progress-bar bg-success" style="width: ${endpoint.successRate}%"></div>
+                        </div>
+                        <span><strong>${endpoint.successRate}%</strong></span>
+                    </div>
+                </td>
+                <td>
+                    <span class="text-danger"><strong>${endpoint.errorRate}%</strong></span>
+                </td>
+                <td>
+                    <small>${new Date(endpoint.lastCheck).toLocaleTimeString()}</small>
+                </td>
+                <td>
+                    <button class="btn btn-outline-primary btn-sm" onclick="testAPI('${endpoint.name}')">
+                        <i class="bi bi-play"></i>
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="viewAPIDetails('${endpoint.name}')">
+                        <i class="bi bi-info"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+function updateAPICharts(data) {
+    const timestamp = new Date().toLocaleTimeString();
+    
+    // Update response time chart
+    if (responseTimeChart.data.labels.length > 20) {
+        responseTimeChart.data.labels.shift();
+        responseTimeChart.data.datasets.forEach(dataset => dataset.data.shift());
+    }
+    
+    responseTimeChart.data.labels.push(timestamp);
+    data.endpoints.forEach((endpoint, index) => {
+        responseTimeChart.data.datasets[index].data.push(endpoint.responseTime);
+    });
+    responseTimeChart.update('none');
+    
+    // Update distribution chart
+    const requests = data.endpoints.map(e => e.requestsPerMin);
+    distributionChart.data.datasets[0].data = requests;
+    distributionChart.update('none');
+    
+    // Update error rate chart
+    const errorRates = data.endpoints.map(e => e.errorRate);
+    errorRateChart.data.datasets[0].data = errorRates;
+    errorRateChart.update('none');
+    
+    // Update throughput chart
+    const totalThroughput = data.endpoints.reduce((sum, e) => sum + e.requestsPerMin, 0);
+    if (throughputChart.data.labels.length > 20) {
+        throughputChart.data.labels.shift();
+        throughputChart.data.datasets[0].data.shift();
+    }
+    throughputChart.data.labels.push(timestamp);
+    throughputChart.data.datasets[0].data.push(totalThroughput);
+    throughputChart.update('none');
+}
+
+function updateActivityLog(data) {
+    // Add new activity entries
+    data.endpoints.forEach(endpoint => {
+        if (endpoint.status !== 'healthy') {
+            activityLog.push({
+                timestamp: new Date().toLocaleTimeString(),
+                type: endpoint.status,
+                message: `${endpoint.name} - ${endpoint.status === 'warning' ? 'Performance degraded' : 'Service unavailable'}`,
+                details: `Response time: ${endpoint.responseTime}ms, Success rate: ${endpoint.successRate}%`
+            });
+        }
+    });
+    
+    // Keep only recent entries
+    if (activityLog.length > 50) {
+        activityLog = activityLog.slice(-50);
+    }
+    
+    // Update activity log display
+    const container = document.getElementById('activity-log');
+    let html = '';
+    
+    if (activityLog.length === 0) {
+        html = '<div class="text-center text-muted py-4">No recent activity</div>';
+    } else {
+        activityLog.slice(-10).reverse().forEach(entry => {
+            const iconClass = entry.type === 'warning' ? 'exclamation-triangle text-warning' : 'x-circle text-danger';
+            html += `
+                <div class="mb-2 p-2 border-start border-3 border-${entry.type === 'warning' ? 'warning' : 'danger'}">
+                    <div class="d-flex justify-content-between">
+                        <strong><i class="bi bi-${iconClass}"></i> ${entry.message}</strong>
+                        <small class="text-muted">${entry.timestamp}</small>
+                    </div>
+                    <small class="text-muted">${entry.details}</small>
+                </div>
+            `;
+        });
+    }
+    
+    container.innerHTML = html;
+}
+
+function showAPIError(message) {
+    const container = document.getElementById('api-status-cards');
+    container.innerHTML = `
+        <div class="col-12 text-center py-4">
+            <i class="bi bi-exclamation-circle text-danger" style="font-size: 3rem;"></i>
+            <h5 class="mt-3 text-danger">API Health Monitoring Error</h5>
+            <p class="text-muted">${message}</p>
+        </div>
+    `;
+}
+
+// Modal and configuration functions
+function openHealthConfigModal() {
+    const modal = new bootstrap.Modal(document.getElementById('healthConfigModal'));
+    modal.show();
+}
+
+function resetHealthConfig() {
+    // Reset form values to defaults
+    document.getElementById('check-interval-input').value = 5;
+    document.getElementById('timeout-input').value = 10;
+    document.getElementById('retry-input').value = 3;
+    document.getElementById('alert-threshold-input').value = 95;
+    document.getElementById('response-time-threshold').value = 5000;
+    
+    DashboardUtils.showToast('Configuration reset to defaults', 'info');
+}
+
+function applyHealthConfig() {
+    // Get form values
+    const checkInterval = document.getElementById('check-interval-input').value;
+    const timeout = document.getElementById('timeout-input').value;
+    const retries = document.getElementById('retry-input').value;
+    const alertThreshold = document.getElementById('alert-threshold-input').value;
+    
+    // Update displayed values
+    DashboardUtils.updateElementSafely('check-interval', checkInterval + 's');
+    DashboardUtils.updateElementSafely('timeout-threshold', timeout + 's');
+    DashboardUtils.updateElementSafely('retry-attempts', retries);
+    DashboardUtils.updateElementSafely('alert-threshold', alertThreshold + '%');
+    
+    // TODO: Apply configuration to backend
+    
+    DashboardUtils.showToast('Health check configuration applied', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('healthConfigModal')).hide();
+}
+
+function testAPI(apiName) {
+    // TODO: Implement API testing
+    DashboardUtils.showToast(`Testing ${apiName}...`, 'info');
+}
+
+function viewAPIDetails(apiName) {
+    // TODO: Implement API details view
+    DashboardUtils.showToast(`Viewing details for ${apiName}`, 'info');
+}
+
+function runAPITest() {
+    // TODO: Implement comprehensive API test
+    DashboardUtils.showToast('Running API test suite...', 'info');
+}
+</script>
+{% endblock %}
