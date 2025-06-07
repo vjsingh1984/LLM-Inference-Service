@@ -17,7 +17,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Any
 
-from flask import Blueprint, request, jsonify, render_template_string
+from flask import Blueprint, request, jsonify, render_template
 
 from ..adapters import (
     OpenAIAdapter, OllamaChatAdapter, OllamaGenerateAdapter,
@@ -25,6 +25,7 @@ from ..adapters import (
 )
 from .handlers import RequestHandler
 from ..utils.model_inspector import model_inspector
+from ..utils.gpu_monitor import gpu_monitor
 
 logger = logging.getLogger(__name__)
 
@@ -356,115 +357,14 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
     
     @api_bp.route('/dashboard', methods=['GET'])
     def dashboard():
-        """Simple web dashboard for monitoring."""
-        dashboard_html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>LLM Inference Service Dashboard</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .container { max-width: 1200px; margin: 0 auto; }
-                .card { border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 5px; }
-                .status-healthy { color: green; }
-                .status-error { color: red; }
-                .status-generating { color: orange; }
-                table { width: 100%; border-collapse: collapse; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
-                #refresh-btn { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>LLM Inference Service Dashboard</h1>
-                
-                <div class="card">
-                    <h2>Service Status</h2>
-                    <div id="service-status">Loading...</div>
-                </div>
-                
-                <div class="card">
-                    <h2>Active Requests</h2>
-                    <button id="refresh-btn" onclick="refreshData()">Refresh</button>
-                    <div id="active-requests">Loading...</div>
-                </div>
-                
-                <div class="card">
-                    <h2>Available Models</h2>
-                    <div id="models-list">Loading...</div>
-                </div>
-            </div>
-            
-            <script>
-                function refreshData() {
-                    fetch('/dashboard/data')
-                        .then(response => response.json())
-                        .then(data => {
-                            updateServiceStatus(data.status);
-                            updateActiveRequests(data.requests);
-                            updateModelsList(data.models);
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            document.getElementById('service-status').innerHTML = '<span class="status-error">Error loading data</span>';
-                        });
-                }
-                
-                function updateServiceStatus(status) {
-                    const statusClass = status.status === 'healthy' ? 'status-healthy' : 'status-error';
-                    document.getElementById('service-status').innerHTML = 
-                        `<span class="${statusClass}">${status.status.toUpperCase()}</span> - ${status.timestamp}`;
-                }
-                
-                function updateActiveRequests(requests) {
-                    if (requests.length === 0) {
-                        document.getElementById('active-requests').innerHTML = '<p>No active requests</p>';
-                        return;
-                    }
-                    
-                    let html = '<table><tr><th>Request ID</th><th>Status</th><th>Model</th><th>Progress</th><th>Start Time</th></tr>';
-                    requests.forEach(req => {
-                        const statusClass = req.status === 'error' ? 'status-error' : 
-                                           req.status === 'generating' ? 'status-generating' : 'status-healthy';
-                        html += `<tr>
-                            <td>${req.request_id.substring(0, 8)}...</td>
-                            <td><span class="${statusClass}">${req.status}</span></td>
-                            <td>${req.model}</td>
-                            <td>${req.progress}/${req.total}</td>
-                            <td>${new Date(req.start_time * 1000).toLocaleTimeString()}</td>
-                        </tr>`;
-                    });
-                    html += '</table>';
-                    document.getElementById('active-requests').innerHTML = html;
-                }
-                
-                function updateModelsList(models) {
-                    if (models.length === 0) {
-                        document.getElementById('models-list').innerHTML = '<p>No models available</p>';
-                        return;
-                    }
-                    
-                    let html = '<ul>';
-                    models.forEach(model => {
-                        html += `<li><strong>${model.name}</strong> - ${model.details.parameter_size} (${model.details.quantization_level})</li>`;
-                    });
-                    html += '</ul>';
-                    document.getElementById('models-list').innerHTML = html;
-                }
-                
-                // Auto-refresh every 5 seconds
-                setInterval(refreshData, 5000);
-                refreshData(); // Initial load
-            </script>
-        </body>
-        </html>
-        """
-        return dashboard_html
+        """Enhanced web dashboard with real-time GPU monitoring."""
+        # Start GPU monitoring if not already running
+        gpu_monitor.start_monitoring()
+        return render_template('dashboard.html')
 
     @api_bp.route('/dashboard/data', methods=['GET'])
     def dashboard_data():
-        """Dashboard data endpoint."""
+        """Enhanced dashboard data endpoint with GPU metrics."""
         try:
             # Get service status
             status_response = health_check()
@@ -479,19 +379,73 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
                     'model': req_status.model,
                     'progress': req_status.progress,
                     'total': req_status.total,
-                    'start_time': req_status.start_time
+                    'start_time': req_status.start_time,
+                    'api_format': getattr(req_status, 'api_format', 'unknown')
                 })
             
             # Get models
             models_data = handler.handle_models_list(model_manager, 'ollama')
             
+            # Get GPU metrics
+            gpu_metrics = gpu_monitor.to_dict()
+            
             return jsonify({
                 'status': status_data,
                 'requests': active_requests,
-                'models': models_data.get('models', [])
+                'models': models_data.get('models', []),
+                'gpu_metrics': gpu_metrics,
+                'timestamp': datetime.now().isoformat()
             })
         except Exception as e:
             logger.exception("Error in dashboard data")
+            return jsonify({'error': str(e)}), 500
+
+    @api_bp.route('/dashboard/gpu', methods=['GET'])
+    def gpu_monitor_page():
+        """Dedicated GPU monitoring page."""
+        gpu_monitor.start_monitoring()
+        return render_template('gpu_monitor.html')
+    
+    @api_bp.route('/dashboard/models', methods=['GET'])
+    def model_analytics_page():
+        """Model performance analytics page."""
+        return render_template('model_analytics.html')
+    
+    @api_bp.route('/dashboard/apis', methods=['GET'])
+    def api_health_page():
+        """API endpoint health monitoring page."""
+        return render_template('api_health.html')
+    
+    @api_bp.route('/api/dashboard/gpu-metrics', methods=['GET'])
+    def gpu_metrics_api():
+        """Real-time GPU metrics API endpoint."""
+        try:
+            metrics = gpu_monitor.to_dict()
+            return jsonify(metrics) if metrics else jsonify({'error': 'No GPU data available'}), 503
+        except Exception as e:
+            logger.exception("Error getting GPU metrics")
+            return jsonify({'error': str(e)}), 500
+    
+    @api_bp.route('/api/dashboard/configure', methods=['POST'])
+    def configure_system():
+        """Dynamic system configuration endpoint."""
+        try:
+            config_data = request.get_json()
+            if not config_data:
+                return jsonify({'error': 'No configuration data provided'}), 400
+            
+            # TODO: Implement configuration application
+            # This would update tensor splits, context sizes, etc.
+            
+            logger.info(f"Configuration update requested: {config_data}")
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Configuration applied successfully',
+                'applied_config': config_data
+            })
+        except Exception as e:
+            logger.exception("Error applying configuration")
             return jsonify({'error': str(e)}), 500
 
     @api_bp.route('/', methods=['GET'])

@@ -15,6 +15,7 @@
 """Main entry point for the Ollama-compatible LLM inference server."""
 import logging
 import sys
+import os
 from typing import Optional
 
 from flask import Flask
@@ -35,8 +36,9 @@ def create_app(config) -> tuple[Flask, ModelManager, RequestTracker, Optional[LL
     # Setup logging
     setup_logging(config.log_dir, config.debug)
     
-    # Initialize Flask app
-    app = Flask(__name__)
+    # Initialize Flask app with template folder
+    template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+    app = Flask(__name__, template_folder=template_dir)
     app.config['DEBUG'] = config.debug
     
     # Initialize core components

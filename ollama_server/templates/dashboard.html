@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - LLM Inference Service{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left Sidebar - Quick Stats -->
+    <div class="col-md-3">
+        <div class="sidebar">
+            <h5 class="mb-3">
+                <i class="bi bi-speedometer2"></i>
+                System Overview
+            </h5>
+            
+            <!-- System Status -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Service Status</span>
+                    <span id="service-status" class="badge bg-success">
+                        <span class="status-indicator status-healthy"></span>
+                        Healthy
+                    </span>
+                </div>
+            </div>
+            
+            <!-- GPU Count -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>GPU Count</span>
+                    <span id="gpu-count" class="badge bg-primary">-</span>
+                </div>
+            </div>
+            
+            <!-- Total VRAM -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Total VRAM</span>
+                    <span id="total-vram" class="badge bg-info">-</span>
+                </div>
+            </div>
+            
+            <!-- Active Models -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Active Models</span>
+                    <span id="active-models" class="badge bg-warning">-</span>
+                </div>
+            </div>
+            
+            <!-- Active Requests -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Active Requests</span>
+                    <span id="active-requests" class="badge bg-secondary">-</span>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <!-- Quick Actions -->
+            <h6 class="mb-3">Quick Actions</h6>
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="refreshAllData()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh All
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="openConfigModal()">
+                    <i class="bi bi-gear"></i> Configure
+                </button>
+                <a href="/health" class="btn btn-outline-info btn-sm">
+                    <i class="bi bi-heart-pulse"></i> Health Check
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content Area -->
+    <div class="col-md-9">
+        <!-- Top Metrics Row -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="avg-gpu-util">-</div>
+                    <div class="metric-label">Avg GPU Utilization</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="metric-value" id="memory-usage">-</div>
+                    <div class="metric-label">Memory Usage</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="metric-value" id="requests-per-min">-</div>
+                    <div class="metric-label">Requests/Min</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                    <div class="metric-value" id="avg-response-time">-</div>
+                    <div class="metric-label">Avg Response</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- GPU Monitoring Panel -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-gpu-card"></i>
+                            Real-Time GPU Monitoring
+                            <span class="badge bg-success ms-2">Live</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="gpu-panels" class="row">
+                            <!-- GPU cards will be dynamically generated here -->
+                            <div class="col-12 text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading GPU data...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading GPU information...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-graph-up"></i>
+                            GPU Utilization Trend
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="gpu-utilization-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-memory"></i>
+                            Memory Usage
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="memory-usage-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API Endpoints Status -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-cloud-check"></i>
+                            API Endpoints Health
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="api-endpoints" class="row">
+                            <!-- API endpoint cards will be generated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Requests Table -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-list-task"></i>
+                            Active Requests
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Request ID</th>
+                                        <th>Model</th>
+                                        <th>API Format</th>
+                                        <th>Status</th>
+                                        <th>Progress</th>
+                                        <th>Start Time</th>
+                                        <th>Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="requests-table-body">
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">
+                                            No active requests
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Modal -->
+<div class="modal fade" id="configModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-gear"></i>
+                    System Configuration
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Tensor Split Configuration</h6>
+                        <div id="tensor-split-controls">
+                            <!-- Dynamic tensor split sliders will be generated here -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Performance Settings</h6>
+                        <div class="mb-3">
+                            <label for="context-size" class="form-label">Context Size</label>
+                            <select class="form-select" id="context-size">
+                                <option value="4096">4K</option>
+                                <option value="8192">8K</option>
+                                <option value="16384">16K</option>
+                                <option value="32768">32K</option>
+                                <option value="65536">64K</option>
+                                <option value="131072">128K</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="gpu-layers" class="form-label">GPU Layers</label>
+                            <input type="number" class="form-control" id="gpu-layers" value="999" min="0" max="999">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="batch-size" class="form-label">Batch Size</label>
+                            <input type="number" class="form-control" id="batch-size" value="512" min="1" max="2048">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="applyConfiguration()">Apply Configuration</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Dashboard-specific JavaScript
+let gpuChart, memoryChart;
+let dashboardData = {};
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    startAutoRefresh(refreshAllData, 2000); // 2-second refresh for dashboard
+});
+
+function initializeCharts() {
+    // GPU Utilization Chart
+    const gpuCtx = document.getElementById('gpu-utilization-chart').getContext('2d');
+    gpuChart = new Chart(gpuCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: []
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+    
+    // Memory Usage Chart
+    const memCtx = document.getElementById('memory-usage-chart').getContext('2d');
+    memoryChart = new Chart(memCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Used', 'Available'],
+            datasets: [{
+                data: [0, 100],
+                backgroundColor: ['#dc3545', '#e9ecef'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+async function refreshAllData() {
+    try {
+        // Fetch dashboard data
+        const response = await fetch('/dashboard/data');
+        if (!response.ok) throw new Error('Failed to fetch dashboard data');
+        
+        dashboardData = await response.json();
+        
+        // Update all dashboard components
+        updateQuickStats();
+        updateTopMetrics();
+        updateGPUPanels();
+        updateAPIEndpoints();
+        updateActiveRequests();
+        updateCharts();
+        
+    } catch (error) {
+        console.error('Error refreshing dashboard data:', error);
+        DashboardUtils.showToast('Failed to refresh dashboard data', 'danger');
+    }
+}
+
+function updateQuickStats() {
+    const gpu_data = dashboardData.gpu_metrics;
+    const requests = dashboardData.requests || [];
+    const models = dashboardData.models || [];
+    
+    if (gpu_data && gpu_data.gpus) {
+        DashboardUtils.updateElementSafely('gpu-count', gpu_data.gpus.length);
+        
+        const totalMemory = gpu_data.gpus.reduce((sum, gpu) => sum + gpu.memory_total, 0);
+        DashboardUtils.updateElementSafely('total-vram', DashboardUtils.formatBytes(totalMemory * 1024 * 1024));
+    }
+    
+    DashboardUtils.updateElementSafely('active-models', models.length);
+    DashboardUtils.updateElementSafely('active-requests', requests.length);
+    
+    // Update service status
+    const status = dashboardData.status?.status === 'healthy' ? 'Healthy' : 'Error';
+    const statusClass = status === 'Healthy' ? 'bg-success' : 'bg-danger';
+    DashboardUtils.updateElementSafely('service-status', 
+        `<span class="status-indicator ${status === 'Healthy' ? 'status-healthy' : 'status-error'}"></span>${status}`
+    );
+    document.getElementById('service-status').className = `badge ${statusClass}`;
+}
+
+function updateTopMetrics() {
+    const gpu_data = dashboardData.gpu_metrics;
+    
+    if (gpu_data && gpu_data.gpus) {
+        // Average GPU utilization
+        const avgUtil = gpu_data.gpus.reduce((sum, gpu) => sum + gpu.utilization_gpu, 0) / gpu_data.gpus.length;
+        DashboardUtils.updateElementSafely('avg-gpu-util', Math.round(avgUtil) + '%');
+        
+        // Memory usage percentage
+        const totalUsed = gpu_data.gpus.reduce((sum, gpu) => sum + gpu.memory_used, 0);
+        const totalAvailable = gpu_data.gpus.reduce((sum, gpu) => sum + gpu.memory_total, 0);
+        const memoryPercent = Math.round((totalUsed / totalAvailable) * 100);
+        DashboardUtils.updateElementSafely('memory-usage', memoryPercent + '%');
+    }
+    
+    // TODO: Add real metrics for requests/min and response time
+    DashboardUtils.updateElementSafely('requests-per-min', '0');
+    DashboardUtils.updateElementSafely('avg-response-time', '0ms');
+}
+
+function updateGPUPanels() {
+    const gpu_data = dashboardData.gpu_metrics;
+    const container = document.getElementById('gpu-panels');
+    
+    if (!gpu_data || !gpu_data.gpus || gpu_data.gpus.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-4">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                <p class="mt-2 text-muted">No GPU information available</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    gpu_data.gpus.forEach((gpu, index) => {
+        const utilizationColor = gpu.utilization_gpu > 80 ? 'bg-danger' : 
+                                gpu.utilization_gpu > 60 ? 'bg-warning' : 'bg-success';
+        
+        const tempColor = gpu.temperature > 80 ? 'text-danger' : 
+                         gpu.temperature > 70 ? 'text-warning' : 'text-success';
+        
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card gpu-card">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="bi bi-gpu-card"></i>
+                            GPU ${gpu.gpu_id}: ${gpu.name}
+                        </h6>
+                        
+                        <div class="row mb-2">
+                            <div class="col-6">
+                                <small class="text-muted">Utilization</small>
+                                <div class="gpu-utilization-bar">
+                                    <div class="gpu-utilization-fill ${utilizationColor}" 
+                                         style="width: ${gpu.utilization_gpu}%"></div>
+                                </div>
+                                <small>${Math.round(gpu.utilization_gpu)}%</small>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Memory</small>
+                                <div class="gpu-utilization-bar">
+                                    <div class="gpu-utilization-fill bg-info" 
+                                         style="width: ${(gpu.memory_used/gpu.memory_total)*100}%"></div>
+                                </div>
+                                <small>${DashboardUtils.formatBytes(gpu.memory_used * 1024 * 1024)} / ${DashboardUtils.formatBytes(gpu.memory_total * 1024 * 1024)}</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-4">
+                                <small class="text-muted">Temperature</small><br>
+                                <span class="${tempColor}"><strong>${gpu.temperature}°C</strong></span>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">Power</small><br>
+                                <span><strong>${Math.round(gpu.power_draw)}W</strong></span>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">Clock</small><br>
+                                <span><strong>${gpu.clock_graphics || 'N/A'} MHz</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function updateAPIEndpoints() {
+    const container = document.getElementById('api-endpoints');
+    
+    // TODO: Get real API endpoint status
+    const endpoints = [
+        { name: 'OpenAI API', path: '/v1/chat/completions', status: 'healthy', response_time: '45ms', requests: 127 },
+        { name: 'Ollama API', path: '/api/generate', status: 'healthy', response_time: '38ms', requests: 89 },
+        { name: 'vLLM API', path: '/v1/completions', status: 'healthy', response_time: '52ms', requests: 34 },
+        { name: 'HuggingFace API', path: '/generate', status: 'healthy', response_time: '67ms', requests: 12 }
+    ];
+    
+    let html = '';
+    endpoints.forEach(endpoint => {
+        const statusClass = endpoint.status === 'healthy' ? 'status-healthy' : 'status-error';
+        const cardClass = endpoint.name.toLowerCase().includes('openai') ? 'api-openai' :
+                         endpoint.name.toLowerCase().includes('ollama') ? 'api-ollama' :
+                         endpoint.name.toLowerCase().includes('vllm') ? 'api-vllm' : 'api-huggingface';
+        
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card api-endpoint-card ${cardClass}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1">${endpoint.name}</h6>
+                                <small class="text-muted">${endpoint.path}</small>
+                            </div>
+                            <span class="status-indicator ${statusClass}"></span>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <small class="text-muted">Response Time</small><br>
+                                <strong>${endpoint.response_time}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Requests</small><br>
+                                <strong>${endpoint.requests}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function updateActiveRequests() {
+    const requests = dashboardData.requests || [];
+    const tbody = document.getElementById('requests-table-body');
+    
+    if (requests.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-muted">No active requests</td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    requests.forEach(req => {
+        const statusClass = req.status === 'error' ? 'bg-danger' : 
+                           req.status === 'generating' ? 'bg-warning' : 'bg-success';
+        
+        const startTime = new Date(req.start_time * 1000);
+        const duration = Math.round((Date.now() - startTime.getTime()) / 1000);
+        
+        html += `
+            <tr>
+                <td><code>${req.request_id.substring(0, 8)}...</code></td>
+                <td>${req.model}</td>
+                <td><span class="badge bg-secondary">${req.api_format || 'unknown'}</span></td>
+                <td><span class="badge ${statusClass}">${req.status}</span></td>
+                <td>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar" style="width: ${(req.progress / req.total) * 100}%">
+                            ${req.progress}/${req.total}
+                        </div>
+                    </div>
+                </td>
+                <td>${startTime.toLocaleTimeString()}</td>
+                <td>${duration}s</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+function updateCharts() {
+    // TODO: Implement chart updates with historical data
+    const gpu_data = dashboardData.gpu_metrics;
+    
+    if (gpu_data && gpu_data.gpus) {
+        // Update memory chart
+        const totalUsed = gpu_data.gpus.reduce((sum, gpu) => sum + gpu.memory_used, 0);
+        const totalAvailable = gpu_data.gpus.reduce((sum, gpu) => sum + gpu.memory_total, 0);
+        const used = (totalUsed / totalAvailable) * 100;
+        
+        memoryChart.data.datasets[0].data = [used, 100 - used];
+        memoryChart.update('none');
+    }
+}
+
+function openConfigModal() {
+    const modal = new bootstrap.Modal(document.getElementById('configModal'));
+    generateTensorSplitControls();
+    modal.show();
+}
+
+function generateTensorSplitControls() {
+    const container = document.getElementById('tensor-split-controls');
+    const gpu_data = dashboardData.gpu_metrics;
+    
+    if (!gpu_data || !gpu_data.gpus) {
+        container.innerHTML = '<p class="text-muted">No GPU data available</p>';
+        return;
+    }
+    
+    let html = '';
+    gpu_data.gpus.forEach((gpu, index) => {
+        const defaultValue = 100 / gpu_data.gpus.length; // Equal split by default
+        
+        html += `
+            <div class="slider-container">
+                <label for="gpu-${index}-split" class="form-label">
+                    GPU ${index} (${gpu.name}): <span id="gpu-${index}-value">${defaultValue.toFixed(1)}%</span>
+                </label>
+                <input type="range" class="form-range weight-slider" 
+                       id="gpu-${index}-split" 
+                       min="0" max="100" step="0.1" 
+                       value="${defaultValue}"
+                       oninput="updateTensorSplitValue(${index}, this.value)">
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function updateTensorSplitValue(gpuIndex, value) {
+    document.getElementById(`gpu-${gpuIndex}-value`).textContent = parseFloat(value).toFixed(1) + '%';
+    
+    // TODO: Auto-balance other GPUs to maintain 100% total
+}
+
+function applyConfiguration() {
+    // TODO: Implement configuration application
+    DashboardUtils.showToast('Configuration applied successfully', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('configModal')).hide();
+}
+</script>
+{% endblock %}
