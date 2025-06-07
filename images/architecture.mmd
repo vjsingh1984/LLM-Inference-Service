@@ -2,7 +2,6 @@ graph TB
     subgraph "Client Layer"
         C1[OpenAI Client]
         C2[Ollama Client]
-        C3[Claude Client]
         C4[vLLM Client]
         C5[HuggingFace Client]
         C6[Web Dashboard]
@@ -17,7 +16,6 @@ graph TB
     subgraph "Request Adapters"
         OA[OpenAI Adapter]
         OL[Ollama Adapter<br/>Context Fix]
-        CL[Claude Adapter]
         VL[vLLM Adapter]
         HF[HuggingFace Adapter]
     end
@@ -50,7 +48,6 @@ graph TB
     
     C1 --> AG
     C2 --> AG
-    C3 --> AG
     C4 --> AG
     C5 --> AG
     C6 --> WD
@@ -59,13 +56,11 @@ graph TB
     AG --> WD
     AG --> OA
     AG --> OL
-    AG --> CL
     AG --> VL
     AG --> HF
     
     OA --> RT
     OL --> RT
-    CL --> RT
     VL --> RT
     HF --> RT
     
@@ -91,7 +86,6 @@ graph TB
     
     style C1 fill:#e1f5fe
     style C2 fill:#e1f5fe
-    style C3 fill:#e1f5fe
     style C4 fill:#e1f5fe
     style C5 fill:#e1f5fe
     style C6 fill:#e8f5e8

@@ -17,7 +17,6 @@
 from .base import RequestAdapter
 from .openai import OpenAIAdapter
 from .ollama import OllamaChatAdapter, OllamaGenerateAdapter
-from .claude import ClaudeAdapter
 from .vllm import VLLMAdapter
 from .huggingface import HuggingFaceAdapter
 
@@ -26,7 +25,6 @@ __all__ = [
     'OpenAIAdapter',
     'OllamaChatAdapter',
     'OllamaGenerateAdapter',
-    'ClaudeAdapter',
     'VLLMAdapter',
     'HuggingFaceAdapter',
 ]

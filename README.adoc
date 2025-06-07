@@ -32,7 +32,7 @@ The LLM Inference Service is a cost-effective, production-ready inference server
 * Maximize PCIe lane utilization on standard motherboards
 
 **🔧 Unified API Compatibility**
-* Full compatibility with OpenAI, Ollama, Claude, vLLM, and HuggingFace TGI APIs
+* Full compatibility with OpenAI, Ollama, vLLM, and HuggingFace TGI APIs
 * Dynamic model inspection that bypasses artificial context limitations (e.g., 32K models showing as 4K)
 * Think tag preservation for reasoning models
 * Real-time streaming with progress tracking
@@ -64,7 +64,7 @@ A clean, modular codebase with format-specific adapters ensures compatibility ac
 
 == Key Features
 
-* **🔄 Multi-API Compatibility**: Full support for OpenAI, Ollama, Claude, vLLM, and HuggingFace TGI API formats
+* **🔄 Multi-API Compatibility**: Full support for OpenAI, Ollama, vLLM, and HuggingFace TGI API formats
 * **⚡ High Performance**: Built on llama.cpp with GPU acceleration and optimized inference
 * **🖥️ Multi-GPU Support**: Advanced tensor splitting across up to 8 GPUs for large models
 * **🧠 Intelligent Model Management**: Dynamic model discovery with accurate context size detection
@@ -92,7 +92,7 @@ image::images/architecture.png[System Architecture,800,600]
 |Flask-based web server with unified routing for all API formats and monitoring dashboard
 
 |**Request Adapters**
-|Format-specific adapters for OpenAI, Ollama, Claude, vLLM, and HuggingFace TGI APIs
+|Format-specific adapters for OpenAI, Ollama, vLLM, and HuggingFace TGI APIs
 
 |**Model Manager**
 |Advanced model discovery with dynamic context detection and Ollama manifest integration
@@ -136,7 +136,6 @@ ollama_server/
 │   ├── base.py        # Base adapter with accurate context size detection
 │   ├── openai.py      # OpenAI API compatibility
 │   ├── ollama.py      # Ollama API compatibility with context fixes
-│   ├── claude.py      # Claude/Anthropic API support
 │   ├── vllm.py        # vLLM API compatibility
 │   └── huggingface.py # HuggingFace TGI API support
 ├── api/               # Web API layer

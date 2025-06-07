@@ -21,7 +21,7 @@ from flask import Blueprint, request, jsonify, render_template_string
 
 from ..adapters import (
     OpenAIAdapter, OllamaChatAdapter, OllamaGenerateAdapter,
-    ClaudeAdapter, VLLMAdapter, HuggingFaceAdapter
+    VLLMAdapter, HuggingFaceAdapter
 )
 from .handlers import RequestHandler
 from ..utils.model_inspector import model_inspector
@@ -96,20 +96,6 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
             logger.exception("Error in Ollama generate")
             return jsonify({'error': str(e)}), 400
 
-    @api_bp.route('/v1/messages', methods=['POST'])  # Claude
-    def claude_messages():
-        """Claude/Anthropic messages endpoint."""
-        try:
-            adapter = ClaudeAdapter(model_manager, config.default_tensor_split)
-            request_obj = adapter.parse_request(request.json)
-            
-            if request_obj.stream:
-                return handler.create_streaming_response(adapter, request_obj)
-            else:
-                return handler.handle_non_streaming_request(adapter, request_obj)
-        except Exception as e:
-            logger.exception("Error in Claude messages")
-            return jsonify({'error': str(e)}), 400
 
     @api_bp.route('/v1/chat/completions', methods=['POST'])  # vLLM Chat
     def vllm_chat_completions():

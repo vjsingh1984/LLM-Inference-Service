@@ -135,8 +135,6 @@ class RequestHandler:
             logger.error(f"[{req_id}] Non-streaming call to executor failed: {error_msg}. Output (if any): '{output[:100]}...'")
             # API-specific error formatting
             err_resp_payload = {'error': error_msg}
-            if api_format == 'claude':
-                err_resp_payload = {'type': 'error', 'error': {'type': 'api_error', 'message': error_msg}}
             return jsonify(err_resp_payload), 500
 
         logger.info(f"[{req_id}] Non-streaming executor call successful. Output len: {len(output)}. Formatting for {api_format}.")
