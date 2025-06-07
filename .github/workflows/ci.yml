@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.10, 3.11, 3.12]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flake8 mypy black isort
+
+    - name: Lint with flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 ollama_server --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings. Line length is set to 100 chars.
+        flake8 ollama_server --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+
+    - name: Check code formatting with black
+      run: |
+        black --check --line-length=100 ollama_server
+
+    - name: Check import sorting with isort
+      run: |
+        isort --check-only --profile black ollama_server
+
+    - name: Type checking with mypy
+      run: |
+        mypy ollama_server --ignore-missing-imports
+
+    - name: Test with pytest
+      run: |
+        pytest tests/ --cov=ollama_server --cov-report=xml --cov-report=term-missing
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  lint-configs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Validate YAML files
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y yamllint
+        find . -name "*.yml" -o -name "*.yaml" | xargs yamllint -d relaxed
+
+    - name: Check shell scripts
+      run: |
+        sudo apt-get install -y shellcheck
+        find . -name "*.sh" | xargs shellcheck
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run safety check for Python dependencies
+      run: |
+        python -m pip install --upgrade pip safety
+        safety check --json
+
+    - name: Run bandit security linter
+      run: |
+        pip install bandit
+        bandit -r ollama_server -f json -o bandit-report.json
+      continue-on-error: true
+
+    - name: Upload bandit report
+      uses: actions/upload-artifact@v3
+      with:
+        name: bandit-report
+        path: bandit-report.json

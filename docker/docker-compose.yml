@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  llm-inference:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: llm-inference
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - /opt/llm/models/ollama/models:/opt/llm/models/ollama/models
+      - /opt/llm/models/ollama-custom-models/llama.cpp:/opt/llm/models/ollama-custom-models/llama.cpp
+      - ../logs:/opt/llm/inference-service/logs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all

@@ -1,0 +1,116 @@
+@startuml class_diagram
+!theme aws-orange
+
+package "ollama_server.core" {
+    class InternalRequest {
+        +request_id: str
+        +model_name: str
+        +prompt: str
+        +context_size: int
+        +max_tokens: int
+        +temperature: float
+        +threads: int
+        +tensor_split: Optional[str]
+        +gpu_layers: int
+        +stream: bool
+        +additional_params: Dict[str, Any]
+    }
+    
+    class RequestStatus {
+        +request_id: str
+        +status: str
+        +progress: int
+        +total: int
+        +output: str
+        +start_time: float
+        +last_update: float
+        +model: str
+        +options: Dict[str, Any]
+        +error: Optional[str]
+        +actual_tokens: int
+        +context_size: int
+        +prompt_tokens: int
+    }
+    
+    class RequestTracker {
+        -active_requests: Dict[str, RequestStatus]
+        -_lock: threading.Lock
+        -model_manager: ModelManager
+        +add_request(request: InternalRequest): None
+        +update_request(request_id: str, **kwargs): None
+        +get_request(request_id: str): Optional[RequestStatus]
+        +remove_request(request_id: str): None
+        +get_all_requests(): Dict[str, RequestStatus]
+        +remove_completed(older_than_seconds: int): int
+    }
+    
+    class LLAMAExecutor {
+        +llama_cli_path: str
+        +model_manager: ModelManager
+        +request_tracker: RequestTracker
+        +execute_request_streaming(request: InternalRequest): Generator[str, None, None]
+        +execute_request_non_streaming(request: InternalRequest): Tuple[str, Optional[str]]
+        -_validate_and_prepare_request(request: InternalRequest): Optional[str]
+        -_execute_shared(request: InternalRequest, is_streaming: bool): Tuple
+    }
+}
+
+package "ollama_server.models" {
+    class ModelInfo {
+        +id: str
+        +name: str
+        +path: str
+        +context_size: int
+        +size: int
+        +parameter_size: str
+        +quantization: str
+        +modified_at: str
+    }
+    
+    class ModelManager {
+        +models_base_dir: Path
+        +models_dir: Path
+        +manifests_dir: Path
+        -_model_cache: Dict[str, ModelInfo]
+        -_context_cache: Dict[str, int]
+        +get_model_info(model_id: str): Optional[ModelInfo]
+        +find_model_path(model_id_query: str): Optional[str]
+        +build_model_mapping(): Dict[str, str]
+        +detect_context_size(model_path_str: str, model_id: str): int
+        +read_manifest_metadata(model_id: str): Dict[str, Any]
+        +estimate_tokens(text: str): int
+    }
+}
+
+package "ollama_server.adapters" {
+    abstract class RequestAdapter {
+        {abstract} +parse_request(data: Dict[str, Any]): InternalRequest
+        {abstract} +format_response(output: str, request: InternalRequest, streaming: bool): Dict[str, Any]
+    }
+    
+    class OpenAIAdapter {
+        +model_manager: ModelManager
+        +parse_request(data: Dict[str, Any]): InternalRequest
+        +format_response(output: str, request: InternalRequest, streaming: bool): Dict[str, Any]
+        -_messages_to_prompt(messages: List[Dict[str, Any]], model_id: str): str
+    }
+    
+    class OllamaAdapter {
+        +model_manager: ModelManager
+        +parse_request(data: Dict[str, Any]): InternalRequest
+        +format_response(output: str, request: InternalRequest, streaming: bool): Dict[str, Any]
+    }
+}
+
+RequestTracker --> InternalRequest : tracks
+RequestTracker --> RequestStatus : manages
+RequestTracker --> ModelManager : uses
+LLAMAExecutor --> ModelManager : uses
+LLAMAExecutor --> RequestTracker : uses
+ModelManager --> ModelInfo : creates
+RequestAdapter <|-- OpenAIAdapter
+RequestAdapter <|-- OllamaAdapter
+OpenAIAdapter --> ModelManager : uses
+OllamaAdapter --> ModelManager : uses
+
+@enduml

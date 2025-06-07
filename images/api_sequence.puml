@@ -1,0 +1,74 @@
+@startuml api_sequence
+!theme aws-orange
+
+participant "Client" as client
+participant "Flask Router" as router
+participant "Request Adapter" as adapter
+participant "Model Manager" as manager
+participant "Request Tracker" as tracker
+participant "LLAMA Executor" as executor
+participant "llama.cpp" as llama
+
+== Request Processing ==
+client -> router: POST /api/generate
+activate router
+
+router -> adapter: parse_request(data)
+activate adapter
+
+adapter -> manager: get_model_info(model_id)
+activate manager
+manager --> adapter: ModelInfo
+deactivate manager
+
+adapter --> router: InternalRequest
+deactivate adapter
+
+router -> tracker: add_request(internal_request)
+activate tracker
+tracker --> router: request_id
+deactivate tracker
+
+== Model Execution ==
+router -> executor: execute_request_streaming(request)
+activate executor
+
+executor -> manager: validate_model(model_id)
+activate manager
+manager --> executor: model_path, context_size
+deactivate manager
+
+executor -> tracker: update_request(status='generating')
+activate tracker
+tracker --> executor: ack
+deactivate tracker
+
+executor -> llama: start_inference_process(args)
+activate llama
+
+== Streaming Response ==
+loop for each token
+    llama --> executor: token_chunk
+    executor -> tracker: update_progress()
+    activate tracker
+    tracker --> executor: ack
+    deactivate tracker
+    executor --> router: yield token_chunk
+    router --> client: stream token
+end
+
+llama --> executor: process_complete
+deactivate llama
+
+executor -> tracker: update_request(status='completed')
+activate tracker
+tracker --> executor: ack
+deactivate tracker
+
+executor --> router: final_output
+deactivate executor
+
+router --> client: response_complete
+deactivate router
+
+@enduml

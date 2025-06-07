@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant Client
+    participant Flask
+    participant Adapter
+    participant RequestTracker
+    participant Executor
+    participant ModelManager
+    participant llama_cpp
+    
+    Client->>Flask: API Request
+    Flask->>Adapter: Route to appropriate adapter
+    Adapter->>ModelManager: Get model info
+    ModelManager-->>Adapter: Model metadata
+    Adapter->>RequestTracker: Create internal request
+    RequestTracker->>Executor: Execute request
+    
+    Executor->>ModelManager: Validate model
+    ModelManager-->>Executor: Model path & context size
+    Executor->>llama_cpp: Start inference process
+    
+    alt Streaming Request
+        loop For each token
+            llama_cpp-->>Executor: Token chunk
+            Executor->>RequestTracker: Update progress
+            Executor-->>Client: Stream token (via Flask)
+        end
+    else Non-streaming Request
+        llama_cpp-->>Executor: Complete response
+        Executor->>RequestTracker: Update final status
+        Executor-->>Client: Full response (via Flask)
+    end
+    
+    Executor->>RequestTracker: Mark completed
+    RequestTracker-->>Client: Final status

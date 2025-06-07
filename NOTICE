@@ -1,0 +1,52 @@
+LLM Inference Service
+Copyright 2025 LLM Inference Service Contributors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+================================================================================
+
+This product includes software developed by the LLM Inference Service Contributors
+and contains code derived from or inspired by the following projects:
+
+1. llama.cpp
+   Copyright (c) 2023 Georgi Gerganov
+   License: MIT License
+   Repository: https://github.com/ggerganov/llama.cpp
+   
+   Used for: Core LLM inference engine and GGUF model support
+
+2. Ollama
+   Copyright (c) 2023 Ollama Contributors  
+   License: MIT License
+   Repository: https://github.com/ollama/ollama
+   
+   Used for: Model manifest format, API design patterns, and CLI integration
+
+3. Flask
+   Copyright (c) 2010 by Armin Ronacher and contributors
+   License: BSD-3-Clause License
+   Repository: https://github.com/pallets/flask
+   
+   Used for: Web framework and HTTP API implementation
+
+4. PyYAML
+   Copyright (c) 2017-2021 Ingy döt Net
+   Copyright (c) 2006-2016 Kirill Simonov
+   License: MIT License
+   
+   Used for: Configuration file parsing
+
+================================================================================
+
+For complete license texts and additional third-party notices, please refer to
+the individual project repositories and the LICENSE file in this distribution.

@@ -1,0 +1,102 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please provide as much detail as possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Tell us what happened!
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Start the service with '...'
+        2. Send request to '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: A clear description of what actually happened.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: api-format
+    attributes:
+      label: API Format
+      description: Which API format were you using?
+      options:
+        - OpenAI Compatible
+        - Ollama Compatible  
+        - Claude/Anthropic
+        - vLLM Compatible
+        - HuggingFace TGI
+        - Not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Information about your environment
+      placeholder: |
+        - OS: [e.g. Ubuntu 22.04]
+        - Python: [e.g. 3.10.12]
+        - GPUs: [e.g. 4x Tesla M10]
+        - Service Version: [e.g. v1.0.0]
+        - Model: [e.g. llama3.1:8b]
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Please paste relevant log output (remove any sensitive information)
+      render: shell
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: Relevant parts of your configuration (remove sensitive info)
+      render: yaml
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues for this bug
+          required: true
+        - label: I have removed sensitive information from logs and config
+          required: true
+        - label: I am using a supported Python version (3.10+)
+          required: true

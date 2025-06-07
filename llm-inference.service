@@ -1,0 +1,41 @@
+[Unit]
+Description=LLM Inference Service - Ollama Compatible API
+Documentation=https://github.com/vjsingh1984/LLM-Inference-Service
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=llm-service
+Group=llm-service
+WorkingDirectory=/opt/llm/inference-service
+ExecStart=/usr/bin/python3 -m ollama_server.main --port 11435 --host 0.0.0.0 --model-dir /opt/llm/models/ollama/models --llama-cpp-dir /opt/llm/models/ollama-custom-models/llama.cpp/build --log-dir /opt/llm/inference-service/logs --default-tensor-split 0.25,0.25,0.25,0.25
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=llm-inference
+
+# Environment variables
+Environment=PYTHONUNBUFFERED=1
+Environment=CUDA_VISIBLE_DEVICES=0,1,2,3
+Environment=NVIDIA_VISIBLE_DEVICES=all
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=false
+ProtectSystem=strict
+ReadWritePaths=/opt/llm/inference-service/logs /opt/llm/models
+ReadOnlyPaths=/opt/llm/models
+
+# Resource limits
+LimitNOFILE=65536
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target

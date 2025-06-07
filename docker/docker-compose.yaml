@@ -1,0 +1,25 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  llm-inference:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: llm-inference
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - /opt/llm/models/ollama/models:/opt/llm/models/ollama/models
+      - ./logs:/opt/llm/inference-service/logs
+      - ./config:/opt/llm/inference-service/config
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all

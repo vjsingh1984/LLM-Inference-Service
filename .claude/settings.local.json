@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(wget:*)",
+      "Bash(java:*)",
+      "Bash(npx mmdc:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo apt-get install:*)",
+      "Bash(apt list:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(chmod:*)",
+      "Bash(./scripts/docker-build.sh:*)",
+      "Bash(docker search:*)",
+      "Bash(docker build:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(./scripts/test-docker-setup.sh:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(kill:*)",
+      "Bash(./start-docker.sh:*)",
+      "Bash(rm:*)",
+      "Bash(docker stop:*)",
+      "Bash(true)",
+      "Bash(docker rm:*)",
+      "Bash(./install-service.sh:*)",
+      "Bash(journalctl:*)",
+      "Bash(pip3 install:*)",
+      "Bash(systemctl:*)",
+      "Bash(time:*)",
+      "Bash(pkill:*)",
+      "Bash(mmdc:*)"
+    ],
+    "deny": []
+  }
+}

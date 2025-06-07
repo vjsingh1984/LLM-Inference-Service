@@ -1,0 +1,103 @@
+graph TB
+    subgraph "Client Layer"
+        C1[OpenAI Client]
+        C2[Ollama Client]
+        C3[Claude Client]
+        C4[vLLM Client]
+        C5[HuggingFace Client]
+        C6[Web Dashboard]
+    end
+    
+    subgraph "API Gateway & Routes"
+        AG[Flask App<br/>Port 11435]
+        WD[Web Dashboard<br/>/dashboard]
+        API[API Routes<br/>/api/show, /health]
+    end
+    
+    subgraph "Request Adapters"
+        OA[OpenAI Adapter]
+        OL[Ollama Adapter<br/>Context Fix]
+        CL[Claude Adapter]
+        VL[vLLM Adapter]
+        HF[HuggingFace Adapter]
+    end
+    
+    subgraph "Core Services"
+        RT[Request Tracker<br/>Progress Monitor]
+        EX[LLAMA Executor<br/>Multi-GPU]
+        MM[Model Manager<br/>Context Detection]
+        MI[Model Inspector<br/>Ollama CLI Integration]
+        RP[Response Processor<br/>Think Tag Support]
+    end
+    
+    subgraph "Storage Layer"
+        MF[Model Files<br/>GGUF Format]
+        ML[Manifest Files<br/>Ollama Format]
+        LG[Structured Logs]
+        CF[Config Files<br/>YAML]
+    end
+    
+    subgraph "Inference Engine"
+        LC[llama.cpp CLI<br/>Tensor Splitting]
+        GPU[Multi-GPU Support<br/>2-8 GPUs]
+        OC[Ollama CLI<br/>Real-time Inspection]
+    end
+    
+    subgraph "Deployment"
+        SD[SystemD Service<br/>Auto-restart]
+        DC[Docker Container<br/>Alternative]
+    end
+    
+    C1 --> AG
+    C2 --> AG
+    C3 --> AG
+    C4 --> AG
+    C5 --> AG
+    C6 --> WD
+    
+    AG --> API
+    AG --> WD
+    AG --> OA
+    AG --> OL
+    AG --> CL
+    AG --> VL
+    AG --> HF
+    
+    OA --> RT
+    OL --> RT
+    CL --> RT
+    VL --> RT
+    HF --> RT
+    
+    RT --> EX
+    EX --> MM
+    MM --> MI
+    MI --> OC
+    
+    EX --> RP
+    RP --> LC
+    LC --> GPU
+    
+    MM --> MF
+    MM --> ML
+    MM --> CF
+    
+    EX --> LG
+    RT --> LG
+    MI --> LG
+    
+    SD --> AG
+    DC --> AG
+    
+    style C1 fill:#e1f5fe
+    style C2 fill:#e1f5fe
+    style C3 fill:#e1f5fe
+    style C4 fill:#e1f5fe
+    style C5 fill:#e1f5fe
+    style C6 fill:#e8f5e8
+    style AG fill:#f3e5f5
+    style MI fill:#fff3e0
+    style LC fill:#fff3e0
+    style GPU fill:#ffebee
+    style SD fill:#e3f2fd
+    style OC fill:#f1f8e9

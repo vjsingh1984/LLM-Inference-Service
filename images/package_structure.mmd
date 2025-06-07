@@ -1,0 +1,67 @@
+graph TD
+    subgraph "ollama_server Package"
+        subgraph "core/"
+            CS[schemas.py<br/>InternalRequest<br/>RequestStatus]
+            CR[request_tracker.py<br/>RequestTracker<br/>Progress Monitor]
+            CE[executor.py<br/>LLAMAExecutor<br/>Multi-GPU Support]
+        end
+        
+        subgraph "models/"
+            MS[schemas.py<br/>ModelInfo]
+            MM[manager.py<br/>ModelManager<br/>Context Detection]
+        end
+        
+        subgraph "adapters/"
+            AB[base.py<br/>RequestAdapter<br/>Context Size Detection]
+            AO[openai.py<br/>OpenAI format]
+            AOL[ollama.py<br/>Ollama format<br/>Context Fixes]
+            AC[claude.py<br/>Claude format]
+            AV[vllm.py<br/>vLLM format]
+            AH[huggingface.py<br/>HuggingFace TGI]
+        end
+        
+        subgraph "api/"
+            AR[routes.py<br/>Flask routes<br/>/api/show endpoint]
+            AHA[handlers.py<br/>Request handlers<br/>Streaming support]
+        end
+        
+        subgraph "utils/"
+            UL[logging.py<br/>Structured logging]
+            UM[model_inspector.py<br/>Ollama CLI Integration]
+            UR[response_processing.py<br/>Think Tag Support]
+        end
+        
+        MC[config.py<br/>Configuration<br/>YAML support]
+        MM2[main.py<br/>Application entry<br/>SystemD support]
+    end
+    
+    CS --> CR
+    CS --> CE
+    MS --> MM
+    MM --> UM
+    AB --> AO
+    AB --> AOL
+    AB --> AC
+    AB --> AV
+    AB --> AH
+    MM --> CE
+    CR --> CE
+    CE --> UR
+    AO --> AR
+    AOL --> AR
+    AC --> AR
+    AV --> AR
+    AH --> AR
+    AR --> AHA
+    UM --> AR
+    MC --> MM2
+    UL --> MM2
+    UM --> MM2
+    
+    style CS fill:#e8f5e8
+    style MS fill:#e8f5e8
+    style AB fill:#f0f8ff
+    style AR fill:#fff5ee
+    style MC fill:#f5f5dc
+    style UM fill:#fff3e0
+    style UR fill:#f1f8e9

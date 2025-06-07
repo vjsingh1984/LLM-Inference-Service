@@ -1,0 +1,53 @@
+@startuml deployment
+!theme aws-orange
+
+node "GPU Server" {
+    node "Docker Container" {
+        component "Flask App" as app {
+            port "8000" as p8000
+        }
+        
+        component "llama.cpp" as llama {
+            interface "CLI" as cli
+        }
+        
+        database "Model Storage" {
+            folder "GGUF Models" as models
+            folder "Ollama Manifests" as manifests
+        }
+        
+        database "Logs" as logs
+    }
+    
+    node "GPU Hardware" {
+        component "GPU 0" as gpu0
+        component "GPU 1" as gpu1 
+        component "GPU 2" as gpu2
+        component "GPU 3" as gpu3
+    }
+}
+
+cloud "External Clients" {
+    actor "OpenAI Client" as client1
+    actor "Ollama Client" as client2
+    actor "Web UI" as client3
+}
+
+client1 --> p8000 : HTTP/HTTPS
+client2 --> p8000 : HTTP/HTTPS  
+client3 --> p8000 : HTTP/HTTPS
+
+app --> cli : subprocess
+app --> models : read
+app --> manifests : read
+app --> logs : write
+
+llama --> gpu0 : CUDA
+llama --> gpu1 : CUDA
+llama --> gpu2 : CUDA
+llama --> gpu3 : CUDA
+
+note right of gpu0 : Tensor Split:\n25% per GPU
+note right of models : GGUF Format:\nQuantized Models
+
+@enduml

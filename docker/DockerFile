@@ -1,0 +1,60 @@
+FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CONDA_DIR=/opt/conda
+ENV PATH=$CONDA_DIR/bin:$PATH
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    python3-dev \
+    python3-pip \
+    nvidia-cuda-toolkit \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Miniconda
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh \
+    && bash miniconda.sh -b -p $CONDA_DIR \
+    && rm miniconda.sh
+
+# Create working directories
+RUN mkdir -p /opt/llm/custom-inference-service/{app,models,scripts,logs,config}
+RUN mkdir -p /opt/llm/models/ollama-custom-models/converted-models
+
+# Clone llama.cpp repository
+WORKDIR /opt/llm/models/ollama-custom-models
+RUN git clone https://github.com/ggerganov/llama.cpp
+
+# Build llama.cpp with CUDA
+WORKDIR /opt/llm/models/ollama-custom-models/llama.cpp
+RUN mkdir -p build \
+    && cd build \
+    && cmake .. -DGGML_CUDA=ON \
+    && make -j$(nproc)
+
+# Set up Conda environment
+RUN conda create -n llm-service python=3.10 -y \
+    && echo "source activate llm-service" > ~/.bashrc
+ENV PATH /opt/conda/envs/llm-service/bin:$PATH
+
+# Install Python dependencies
+RUN /bin/bash -c "source activate llm-service && pip install flask gunicorn pyyaml requests"
+
+# Copy application files
+COPY app /opt/llm/custom-inference-service/app
+COPY scripts /opt/llm/custom-inference-service/scripts
+COPY config/service_config.yaml /opt/llm/custom-inference-service/config/service_config.yaml
+
+# Expose API port
+EXPOSE 8000
+
+# Set working directory
+WORKDIR /opt/llm/custom-inference-service
+
+# Start the service
+CMD ["/bin/bash", "-c", "source activate llm-service && cd app && gunicorn --bind 0.0.0.0:8000 wsgi:app --workers 1 --threads 4"]
