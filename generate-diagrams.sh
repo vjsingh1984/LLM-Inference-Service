@@ -24,23 +24,24 @@ if command -v mmdc &> /dev/null; then
         echo '{"args": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]}' > "$PUPPETEER_CONFIG"
     fi
     
-    # Generate architecture diagram
-    if mmdc -i images/architecture.mmd -o images/architecture.png -w 1024 -H 768 -p "$PUPPETEER_CONFIG" 2>/dev/null; then
-        echo "✅ Architecture diagram generated"
+    # Generate architecture diagram with high scale for crisp output (use --no-sandbox for CI environments)
+    export PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage"
+    if mmdc -i images/architecture.mmd -o images/architecture.png --scale 4 -w 1024 -H 768 2>/dev/null; then
+        echo "✅ Architecture diagram generated (4x scale)"
     else
         echo "⚠️  Architecture diagram generation failed"
     fi
     
-    # Generate package structure diagram
-    if mmdc -i images/package_structure.mmd -o images/package_structure.png -w 800 -H 600 -p "$PUPPETEER_CONFIG" 2>/dev/null; then
-        echo "✅ Package structure diagram generated"
+    # Generate package structure diagram with high scale for crisp output
+    if mmdc -i images/package_structure.mmd -o images/package_structure.png --scale 4 -w 800 -H 600 2>/dev/null; then
+        echo "✅ Package structure diagram generated (4x scale)"
     else
         echo "⚠️  Package structure diagram generation failed"
     fi
     
-    # Generate request flow diagram
-    if mmdc -i images/request_flow.mmd -o images/request_flow.png -w 800 -H 500 -p "$PUPPETEER_CONFIG" 2>/dev/null; then
-        echo "✅ Request flow diagram generated"
+    # Generate request flow diagram with high scale for crisp output
+    if mmdc -i images/request_flow.mmd -o images/request_flow.png --scale 4 -w 800 -H 500 2>/dev/null; then
+        echo "✅ Request flow diagram generated (4x scale)"
     else
         echo "⚠️  Request flow diagram generation failed"
     fi
