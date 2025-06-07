@@ -88,6 +88,10 @@ temp/
 config/service_config.yaml
 !config/service_config.yaml.example
 
+# Claude Code specific files (keep locally but exclude from git)
+CLAUDE.md
+.claude/
+
 # Model files and large binaries (exclude from repository)
 models/
 *.gguf

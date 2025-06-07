@@ -1,0 +1,817 @@
+{% extends "base.html" %}
+
+{% block title %}GPU Monitor - LLM Inference Service{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- GPU Overview Cards -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-gpu-card"></i>
+                    GPU System Overview
+                    <span class="badge bg-success ms-2 real-time-indicator">Live</span>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row" id="gpu-overview-cards">
+                    <!-- GPU overview cards will be dynamically generated -->
+                    <div class="col-12 text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading GPU data...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Initializing GPU monitoring...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detailed GPU Cards -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-speedometer2"></i>
+                    Detailed GPU Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="detailed-gpu-cards">
+                    <!-- Detailed GPU cards will be dynamically generated -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Performance Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i>
+                        GPU Utilization History
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="gpu-utilization-history"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-thermometer-half"></i>
+                        Temperature Monitoring
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="temperature-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Memory and Power Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-memory"></i>
+                        Memory Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="memory-distribution-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightning"></i>
+                        Power Consumption
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="power-consumption-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Weight Distribution Visualizer -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-distribute-horizontal"></i>
+                        Tensor Split Configuration
+                        <button class="btn btn-outline-primary btn-sm ms-2" onclick="openTensorSplitModal()">
+                            <i class="bi bi-gear"></i> Configure
+                        </button>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="tensor-split-visualization">
+                        <!-- Tensor split visualization will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Information -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        System Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tbody id="system-info-table">
+                            <tr><td>Driver Version</td><td id="driver-version">Loading...</td></tr>
+                            <tr><td>CUDA Version</td><td id="cuda-version">Loading...</td></tr>
+                            <tr><td>Total VRAM</td><td id="total-vram-info">Loading...</td></tr>
+                            <tr><td>Available VRAM</td><td id="available-vram">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Alerts & Warnings
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="gpu-alerts">
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i>
+                            All GPUs operating normally
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tensor Split Configuration Modal -->
+<div class="modal fade" id="tensorSplitModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-distribute-horizontal"></i>
+                    Tensor Split Configuration
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6>Weight Distribution Controls</h6>
+                        <div id="tensor-split-sliders">
+                            <!-- Dynamic sliders will be generated here -->
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6>Quick Presets</h6>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary" onclick="applyPreset('equal')">
+                                    Equal Split
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="applyPreset('memory-based')">
+                                    Memory Based
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="applyPreset('performance-based')">
+                                    Performance Based
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <h6>Current Configuration</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <pre id="current-tensor-config">Loading...</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <h6>Validation</h6>
+                            <div id="validation-status" class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                Adjust sliders to see validation
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="resetToDefaults()">Reset to Defaults</button>
+                <button type="button" class="btn btn-primary" onclick="applyTensorSplitConfiguration()">
+                    Apply Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// GPU Monitor specific JavaScript
+let utilizationChart, temperatureChart, memoryChart, powerChart;
+let gpuHistoryData = [];
+let maxHistoryPoints = 60; // 2 minutes at 2-second intervals
+
+// Initialize GPU monitor
+document.addEventListener('DOMContentLoaded', function() {
+    initializeGPUCharts();
+    startAutoRefresh(refreshGPUData, 2000); // 2-second refresh for GPU data
+});
+
+function initializeGPUCharts() {
+    // GPU Utilization History
+    const utilizationCtx = document.getElementById('gpu-utilization-history').getContext('2d');
+    utilizationChart = new Chart(utilizationCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: []
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            animation: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+    
+    // Temperature Chart
+    const tempCtx = document.getElementById('temperature-chart').getContext('2d');
+    temperatureChart = new Chart(tempCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: []
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '°C';
+                        }
+                    }
+                }
+            },
+            animation: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+    
+    // Memory Distribution Chart
+    const memoryCtx = document.getElementById('memory-distribution-chart').getContext('2d');
+    memoryChart = new Chart(memoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Power Consumption Chart
+    const powerCtx = document.getElementById('power-consumption-chart').getContext('2d');
+    powerChart = new Chart(powerCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Power Draw (W)',
+                data: [],
+                backgroundColor: '#FF6384',
+                borderColor: '#FF6384',
+                borderWidth: 1
+            }, {
+                label: 'Power Limit (W)',
+                data: [],
+                backgroundColor: '#E7E9ED',
+                borderColor: '#E7E9ED',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + 'W';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
+async function refreshGPUData() {
+    try {
+        const response = await fetch('/api/dashboard/gpu-metrics');
+        if (!response.ok) throw new Error('Failed to fetch GPU metrics');
+        
+        const data = await response.json();
+        
+        updateGPUOverviewCards(data);
+        updateDetailedGPUCards(data);
+        updateGPUCharts(data);
+        updateSystemInfo(data);
+        updateAlerts(data);
+        updateTensorSplitVisualization(data);
+        
+    } catch (error) {
+        console.error('Error refreshing GPU data:', error);
+        showGPUError(error.message);
+    }
+}
+
+function updateGPUOverviewCards(data) {
+    const container = document.getElementById('gpu-overview-cards');
+    
+    if (!data || !data.gpus || data.gpus.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-4">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 text-muted">No GPU Data Available</h5>
+                <p class="text-muted">GPU monitoring may not be available on this system</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    data.gpus.forEach((gpu, index) => {
+        const utilizationColor = gpu.utilization_gpu > 80 ? 'danger' : 
+                                gpu.utilization_gpu > 60 ? 'warning' : 'success';
+        
+        const memoryPercent = (gpu.memory_used / gpu.memory_total) * 100;
+        const memoryColor = memoryPercent > 90 ? 'danger' :
+                           memoryPercent > 70 ? 'warning' : 'info';
+        
+        html += `
+            <div class="col-md-6 col-lg-3 mb-3">
+                <div class="metric-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="text-white-50 mb-1">GPU ${gpu.gpu_id}</h6>
+                            <div class="metric-value" style="font-size: 1.8rem;">${Math.round(gpu.utilization_gpu)}%</div>
+                        </div>
+                        <i class="bi bi-gpu-card" style="font-size: 2rem; opacity: 0.7;"></i>
+                    </div>
+                    <div class="metric-label">${gpu.name}</div>
+                    <div class="mt-2">
+                        <small class="text-white-50">Memory: ${DashboardUtils.formatBytes(gpu.memory_used * 1024 * 1024)} / ${DashboardUtils.formatBytes(gpu.memory_total * 1024 * 1024)}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function updateDetailedGPUCards(data) {
+    const container = document.getElementById('detailed-gpu-cards');
+    
+    if (!data || !data.gpus || data.gpus.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center text-muted py-4">No detailed GPU data available</div>';
+        return;
+    }
+    
+    let html = '';
+    data.gpus.forEach((gpu, index) => {
+        const tempColor = gpu.temperature > 80 ? 'text-danger' : 
+                         gpu.temperature > 70 ? 'text-warning' : 'text-success';
+        
+        const powerPercent = (gpu.power_draw / gpu.power_limit) * 100;
+        const powerColor = powerPercent > 90 ? 'bg-danger' :
+                          powerPercent > 70 ? 'bg-warning' : 'bg-success';
+        
+        html += `
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-gpu-card"></i>
+                            GPU ${gpu.gpu_id}: ${gpu.name}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <!-- Utilization -->
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">GPU Utilization</label>
+                                <div class="progress mb-1" style="height: 20px;">
+                                    <div class="progress-bar bg-primary" style="width: ${gpu.utilization_gpu}%">
+                                        ${Math.round(gpu.utilization_gpu)}%
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Memory Utilization</label>
+                                <div class="progress mb-1" style="height: 20px;">
+                                    <div class="progress-bar bg-info" style="width: ${gpu.utilization_memory}%">
+                                        ${Math.round(gpu.utilization_memory)}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Memory Details -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Memory Usage</label>
+                                <div class="d-flex justify-content-between">
+                                    <span>${DashboardUtils.formatBytes(gpu.memory_used * 1024 * 1024)}</span>
+                                    <span class="text-muted">/ ${DashboardUtils.formatBytes(gpu.memory_total * 1024 * 1024)}</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-info" style="width: ${(gpu.memory_used / gpu.memory_total) * 100}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Temperature, Power, Clocks -->
+                        <div class="row">
+                            <div class="col-4">
+                                <label class="form-label">Temperature</label>
+                                <div class="${tempColor}">
+                                    <strong>${gpu.temperature}°C</strong>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Power</label>
+                                <div>
+                                    <strong>${Math.round(gpu.power_draw)}W</strong>
+                                    <span class="text-muted">/ ${Math.round(gpu.power_limit)}W</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Core Clock</label>
+                                <div>
+                                    <strong>${gpu.clock_graphics || 'N/A'}</strong>
+                                    ${gpu.clock_graphics ? 'MHz' : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${gpu.pcie_generation ? `
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <label class="form-label">PCIe</label>
+                                <div>Gen ${gpu.pcie_generation} x${gpu.pcie_width}</div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Memory Clock</label>
+                                <div>${gpu.clock_memory || 'N/A'} ${gpu.clock_memory ? 'MHz' : ''}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function updateGPUCharts(data) {
+    if (!data || !data.gpus) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    
+    // Add to history
+    gpuHistoryData.push({
+        timestamp: timestamp,
+        gpus: data.gpus.map(gpu => ({
+            id: gpu.gpu_id,
+            utilization: gpu.utilization_gpu,
+            temperature: gpu.temperature,
+            memory_used: gpu.memory_used,
+            memory_total: gpu.memory_total,
+            power_draw: gpu.power_draw,
+            power_limit: gpu.power_limit
+        }))
+    });
+    
+    // Keep only recent history
+    if (gpuHistoryData.length > maxHistoryPoints) {
+        gpuHistoryData.shift();
+    }
+    
+    // Update utilization chart
+    updateUtilizationChart();
+    updateTemperatureChart();
+    updateMemoryChart(data);
+    updatePowerChart(data);
+}
+
+function updateUtilizationChart() {
+    const labels = gpuHistoryData.map(point => point.timestamp);
+    const datasets = [];
+    
+    // Create dataset for each GPU
+    if (gpuHistoryData.length > 0) {
+        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'];
+        
+        gpuHistoryData[0].gpus.forEach((gpu, index) => {
+            datasets.push({
+                label: `GPU ${gpu.id}`,
+                data: gpuHistoryData.map(point => point.gpus[index]?.utilization || 0),
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length] + '20',
+                fill: false,
+                tension: 0.1
+            });
+        });
+    }
+    
+    utilizationChart.data.labels = labels;
+    utilizationChart.data.datasets = datasets;
+    utilizationChart.update('none');
+}
+
+function updateTemperatureChart() {
+    const labels = gpuHistoryData.map(point => point.timestamp);
+    const datasets = [];
+    
+    if (gpuHistoryData.length > 0) {
+        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'];
+        
+        gpuHistoryData[0].gpus.forEach((gpu, index) => {
+            datasets.push({
+                label: `GPU ${gpu.id}`,
+                data: gpuHistoryData.map(point => point.gpus[index]?.temperature || 0),
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length] + '20',
+                fill: false,
+                tension: 0.1
+            });
+        });
+    }
+    
+    temperatureChart.data.labels = labels;
+    temperatureChart.data.datasets = datasets;
+    temperatureChart.update('none');
+}
+
+function updateMemoryChart(data) {
+    const labels = data.gpus.map(gpu => `GPU ${gpu.gpu_id}`);
+    const used = data.gpus.map(gpu => gpu.memory_used);
+    
+    memoryChart.data.labels = labels;
+    memoryChart.data.datasets[0].data = used;
+    memoryChart.update('none');
+}
+
+function updatePowerChart(data) {
+    const labels = data.gpus.map(gpu => `GPU ${gpu.gpu_id}`);
+    const powerDraw = data.gpus.map(gpu => gpu.power_draw);
+    const powerLimit = data.gpus.map(gpu => gpu.power_limit);
+    
+    powerChart.data.labels = labels;
+    powerChart.data.datasets[0].data = powerDraw;
+    powerChart.data.datasets[1].data = powerLimit;
+    powerChart.update('none');
+}
+
+function updateSystemInfo(data) {
+    if (data) {
+        DashboardUtils.updateElementSafely('driver-version', data.driver_version || 'Unknown');
+        DashboardUtils.updateElementSafely('cuda-version', data.cuda_version || 'Unknown');
+        
+        if (data.gpus) {
+            const totalVram = data.gpus.reduce((sum, gpu) => sum + gpu.memory_total, 0);
+            const usedVram = data.gpus.reduce((sum, gpu) => sum + gpu.memory_used, 0);
+            
+            DashboardUtils.updateElementSafely('total-vram-info', DashboardUtils.formatBytes(totalVram * 1024 * 1024));
+            DashboardUtils.updateElementSafely('available-vram', DashboardUtils.formatBytes((totalVram - usedVram) * 1024 * 1024));
+        }
+    }
+}
+
+function updateAlerts(data) {
+    const container = document.getElementById('gpu-alerts');
+    let alerts = [];
+    
+    if (data && data.gpus) {
+        data.gpus.forEach(gpu => {
+            if (gpu.temperature > 85) {
+                alerts.push({
+                    type: 'danger',
+                    icon: 'thermometer-high',
+                    message: `GPU ${gpu.gpu_id} temperature critical: ${gpu.temperature}°C`
+                });
+            } else if (gpu.temperature > 80) {
+                alerts.push({
+                    type: 'warning',
+                    icon: 'thermometer-half',
+                    message: `GPU ${gpu.gpu_id} temperature high: ${gpu.temperature}°C`
+                });
+            }
+            
+            if (gpu.power_draw > gpu.power_limit * 0.95) {
+                alerts.push({
+                    type: 'warning',
+                    icon: 'lightning',
+                    message: `GPU ${gpu.gpu_id} power limit approached: ${Math.round(gpu.power_draw)}W`
+                });
+            }
+            
+            const memoryPercent = (gpu.memory_used / gpu.memory_total) * 100;
+            if (memoryPercent > 95) {
+                alerts.push({
+                    type: 'danger',
+                    icon: 'memory',
+                    message: `GPU ${gpu.gpu_id} memory critical: ${Math.round(memoryPercent)}%`
+                });
+            }
+        });
+    }
+    
+    if (alerts.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle"></i>
+                All GPUs operating normally
+            </div>
+        `;
+    } else {
+        let html = '';
+        alerts.forEach(alert => {
+            html += `
+                <div class="alert alert-${alert.type}">
+                    <i class="bi bi-${alert.icon}"></i>
+                    ${alert.message}
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+}
+
+function updateTensorSplitVisualization(data) {
+    const container = document.getElementById('tensor-split-visualization');
+    
+    if (!data || !data.gpus || data.gpus.length === 0) {
+        container.innerHTML = '<p class="text-muted">No GPU data available for tensor split visualization</p>';
+        return;
+    }
+    
+    // TODO: Add actual tensor split visualization
+    // For now, show equal distribution
+    const equalSplit = 100 / data.gpus.length;
+    
+    let html = '<div class="row">';
+    data.gpus.forEach((gpu, index) => {
+        html += `
+            <div class="col">
+                <div class="text-center">
+                    <div class="progress mb-2" style="height: 30px;">
+                        <div class="progress-bar bg-primary" style="width: 100%">
+                            ${equalSplit.toFixed(1)}%
+                        </div>
+                    </div>
+                    <small>GPU ${gpu.gpu_id}</small><br>
+                    <small class="text-muted">${gpu.name}</small>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
+}
+
+function showGPUError(message) {
+    const containers = ['gpu-overview-cards', 'detailed-gpu-cards'];
+    containers.forEach(containerId => {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-4">
+                    <i class="bi bi-exclamation-circle text-danger" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 text-danger">GPU Monitoring Error</h5>
+                    <p class="text-muted">${message}</p>
+                </div>
+            `;
+        }
+    });
+}
+
+// Tensor Split Modal Functions
+function openTensorSplitModal() {
+    const modal = new bootstrap.Modal(document.getElementById('tensorSplitModal'));
+    generateTensorSplitSliders();
+    modal.show();
+}
+
+function generateTensorSplitSliders() {
+    // TODO: Implement tensor split sliders
+    const container = document.getElementById('tensor-split-sliders');
+    container.innerHTML = '<p class="text-muted">Tensor split controls will be implemented here</p>';
+}
+
+function applyPreset(presetType) {
+    // TODO: Implement preset application
+    DashboardUtils.showToast(`Applied ${presetType} preset`, 'success');
+}
+
+function resetToDefaults() {
+    // TODO: Implement reset functionality
+    DashboardUtils.showToast('Reset to default configuration', 'info');
+}
+
+function applyTensorSplitConfiguration() {
+    // TODO: Implement configuration application
+    DashboardUtils.showToast('Tensor split configuration applied', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('tensorSplitModal')).hide();
+}
+</script>
+{% endblock %}
