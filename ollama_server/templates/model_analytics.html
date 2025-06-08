@@ -262,9 +262,23 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeModelCharts() {
-    // Context Length Chart
-    const contextCtx = document.getElementById('context-length-chart').getContext('2d');
-    contextChart = new Chart(contextCtx, {
+    try {
+        console.log('Initializing model charts...');
+        
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js library not loaded');
+            return;
+        }
+        
+        // Context Length Chart
+        const contextCtx = document.getElementById('context-length-chart');
+        if (!contextCtx) {
+            console.error('Element context-length-chart not found');
+            return;
+        }
+        
+        contextChart = new Chart(contextCtx.getContext('2d'), {
         type: 'bar',
         data: {
             labels: [],
@@ -441,16 +455,37 @@ function initializeModelCharts() {
             }
         }
     });
+        
+        console.log('Model charts initialized successfully');
+    } catch (error) {
+        console.error('Error initializing model charts:', error);
+    }
 }
 
 async function refreshModelData() {
     try {
-        // Fetch dashboard data which includes models
-        const response = await fetch('/api/metrics/dashboard');
-        if (!response.ok) throw new Error('Failed to fetch model data');
+        console.log('Fetching model data from /api/metrics/dashboard...');
+        
+        // Add timeout to the fetch request
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch('/api/metrics/dashboard', {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) throw new Error(`Failed to fetch model data: ${response.status} ${response.statusText}`);
         
         const data = await response.json();
+        console.log('Model data received:', data);
         modelData = data;
+        
+        if (!data.models || data.models.length === 0) {
+            console.warn('No models found in response');
+        } else {
+            console.log(`Found ${data.models.length} models`);
+        }
         
         updateModelOverviewCards(data.models || []);
         updateContextAnalysis(data.models || []);
@@ -459,16 +494,30 @@ async function refreshModelData() {
         updateDetailedModelTable(data.models || []);
         updateOptimizationRecommendations(data.models || [], data.gpu_metrics);
         
+        console.log('Model data refresh completed successfully');
+        
     } catch (error) {
-        console.error('Error refreshing model data:', error);
-        showModelError(error.message);
+        if (error.name === 'AbortError') {
+            console.error('Model data fetch timed out');
+            showModelError('Request timed out. Please check your connection.');
+        } else {
+            console.error('Error refreshing model data:', error);
+            showModelError(error.message);
+        }
     }
 }
 
 function updateModelOverviewCards(models) {
+    console.log('updateModelOverviewCards called with:', models);
     const container = document.getElementById('model-overview-cards');
     
+    if (!container) {
+        console.error('Container "model-overview-cards" not found');
+        return;
+    }
+    
     if (!models || models.length === 0) {
+        console.log('No models provided, showing empty state');
         container.innerHTML = `
             <div class="col-12 text-center py-4">
                 <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
@@ -479,8 +528,10 @@ function updateModelOverviewCards(models) {
         return;
     }
     
+    console.log(`Processing ${models.length} models, showing first 4`);
     let html = '';
     models.slice(0, 4).forEach((model, index) => {
+        console.log(`Processing model ${index}:`, model);
         const gradients = [
             'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
@@ -507,6 +558,7 @@ function updateModelOverviewCards(models) {
         `;
     });
     
+    console.log('Setting container HTML:', html);
     container.innerHTML = html;
 }
 
@@ -550,10 +602,14 @@ function updateContextAnalysis(models) {
     tableBody.innerHTML = html;
     
     // Update context length chart
-    contextChart.data.labels = labels;
-    contextChart.data.datasets[0].data = reportedLengths;
-    contextChart.data.datasets[1].data = detectedLengths;
-    contextChart.update('none');
+    if (contextChart && contextChart.data) {
+        contextChart.data.labels = labels;
+        contextChart.data.datasets[0].data = reportedLengths;
+        contextChart.data.datasets[1].data = detectedLengths;
+        contextChart.update('none');
+    } else {
+        console.warn('contextChart not initialized yet');
+    }
 }
 
 function updatePerformanceMetrics(data) {
@@ -570,9 +626,13 @@ function updateModelCharts(models) {
     const modelNames = models.map(m => m.name.substring(0, 15) + '...');
     const tokensPerSec = models.map(m => Math.floor(Math.random() * 50 + 10)); // Simulated data
     
-    performanceChart.data.labels = modelNames;
-    performanceChart.data.datasets[0].data = tokensPerSec;
-    performanceChart.update('none');
+    if (performanceChart && performanceChart.data) {
+        performanceChart.data.labels = modelNames;
+        performanceChart.data.datasets[0].data = tokensPerSec;
+        performanceChart.update('none');
+    } else {
+        console.warn('performanceChart not initialized yet');
+    }
     
     // Update memory efficiency chart (scatter plot)
     const scatterData = models.map((model, index) => ({
@@ -581,14 +641,22 @@ function updateModelCharts(models) {
         label: model.name
     }));
     
-    memoryChart.data.datasets[0].data = scatterData;
-    memoryChart.update('none');
+    if (memoryChart && memoryChart.data) {
+        memoryChart.data.datasets[0].data = scatterData;
+        memoryChart.update('none');
+    } else {
+        console.warn('memoryChart not initialized yet');
+    }
     
     // Update model usage chart
     const usageData = models.map(m => Math.floor(Math.random() * 100 + 10));
-    usageChart.data.labels = modelNames;
-    usageChart.data.datasets[0].data = usageData;
-    usageChart.update('none');
+    if (usageChart && usageChart.data) {
+        usageChart.data.labels = modelNames;
+        usageChart.data.datasets[0].data = usageData;
+        usageChart.update('none');
+    } else {
+        console.warn('usageChart not initialized yet');
+    }
     
     // Update trends chart with simulated historical data
     updateTrendsChart();
@@ -608,10 +676,14 @@ function updateTrendsChart() {
         latency.push(Math.floor(Math.random() * 1000 + 200));
     }
     
-    trendsChart.data.labels = hours;
-    trendsChart.data.datasets[0].data = requests;
-    trendsChart.data.datasets[1].data = latency;
-    trendsChart.update('none');
+    if (trendsChart && trendsChart.data) {
+        trendsChart.data.labels = hours;
+        trendsChart.data.datasets[0].data = requests;
+        trendsChart.data.datasets[1].data = latency;
+        trendsChart.update('none');
+    } else {
+        console.warn('trendsChart not initialized yet');
+    }
 }
 
 function updateDetailedModelTable(models) {

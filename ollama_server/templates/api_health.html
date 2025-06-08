@@ -560,60 +560,6 @@ async function refreshAPIHealth() {
     }
 }
 
-function generateSimulatedAPIHealth() {
-    const endpoints = [
-        {
-            name: 'OpenAI API',
-            path: '/v1/chat/completions',
-            status: Math.random() > 0.1 ? 'healthy' : 'error',
-            responseTime: Math.floor(Math.random() * 500 + 50),
-            requestsPerMin: Math.floor(Math.random() * 50 + 10),
-            successRate: Math.floor(Math.random() * 10 + 90),
-            errorRate: Math.floor(Math.random() * 10),
-            lastCheck: new Date().toISOString(),
-            color: '#10b981'
-        },
-        {
-            name: 'Ollama API',
-            path: '/api/generate',
-            status: Math.random() > 0.05 ? 'healthy' : 'warning',
-            responseTime: Math.floor(Math.random() * 400 + 30),
-            requestsPerMin: Math.floor(Math.random() * 40 + 15),
-            successRate: Math.floor(Math.random() * 8 + 92),
-            errorRate: Math.floor(Math.random() * 8),
-            lastCheck: new Date().toISOString(),
-            color: '#f59e0b'
-        },
-        {
-            name: 'vLLM API',
-            path: '/v1/completions',
-            status: Math.random() > 0.15 ? 'healthy' : 'warning',
-            responseTime: Math.floor(Math.random() * 600 + 100),
-            requestsPerMin: Math.floor(Math.random() * 30 + 5),
-            successRate: Math.floor(Math.random() * 15 + 85),
-            errorRate: Math.floor(Math.random() * 15),
-            lastCheck: new Date().toISOString(),
-            color: '#06b6d4'
-        },
-        {
-            name: 'HuggingFace TGI',
-            path: '/generate',
-            status: Math.random() > 0.2 ? 'healthy' : 'error',
-            responseTime: Math.floor(Math.random() * 800 + 200),
-            requestsPerMin: Math.floor(Math.random() * 20 + 2),
-            successRate: Math.floor(Math.random() * 20 + 80),
-            errorRate: Math.floor(Math.random() * 20),
-            lastCheck: new Date().toISOString(),
-            color: '#ef4444'
-        }
-    ];
-    
-    return {
-        endpoints: endpoints,
-        timestamp: new Date().toISOString(),
-        overallHealth: endpoints.every(e => e.status === 'healthy') ? 'healthy' : 'degraded'
-    };
-}
 
 function updateAPIStatusCards(endpoints) {
     const container = document.getElementById('api-status-cards');
