@@ -1,0 +1,1121 @@
+{% extends "base.html" %}
+
+{% block title %}Cost-Effectiveness Calculator - LLM Inference Service{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Cost Calculator Input -->
+    <div class="col-md-4 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calculator"></i>
+                    Cost Calculator
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="cost-calculator-form">
+                    <!-- Workload Profile -->
+                    <h6 class="mb-3">Workload Profile</h6>
+                    
+                    <div class="mb-3">
+                        <label for="requests-per-day" class="form-label">Requests per Day</label>
+                        <input type="number" class="form-control" id="requests-per-day" value="1000" min="1">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="avg-tokens" class="form-label">Average Tokens per Request</label>
+                        <input type="number" class="form-control" id="avg-tokens" value="500" min="1">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="peak-concurrent" class="form-label">Peak Concurrent Requests</label>
+                        <input type="number" class="form-control" id="peak-concurrent" value="10" min="1">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="uptime-hours" class="form-label">Uptime Hours per Day</label>
+                        <input type="number" class="form-control" id="uptime-hours" value="16" min="1" max="24" step="0.1">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="growth-rate" class="form-label">Monthly Growth Rate (%)</label>
+                        <input type="number" class="form-control" id="growth-rate" value="5" min="0" max="100" step="0.1">
+                    </div>
+                    
+                    <!-- Deployment Options -->
+                    <h6 class="mb-3 mt-4">Deployment Configuration</h6>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Deployment Type</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="deployment-type" id="consumer-gpu" value="consumer" checked>
+                            <label class="form-check-label" for="consumer-gpu">
+                                Consumer GPU Setup
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="deployment-type" id="cloud-instance" value="cloud">
+                            <label class="form-check-label" for="cloud-instance">
+                                Cloud Instance
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="deployment-type" id="compare-all" value="compare">
+                            <label class="form-check-label" for="compare-all">
+                                Compare All Options
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Consumer GPU Config -->
+                    <div id="consumer-gpu-config">
+                        <div class="mb-3">
+                            <label for="gpu-type" class="form-label">GPU Type</label>
+                            <select class="form-select" id="gpu-type">
+                                <option value="RTX 4090">RTX 4090 (24GB) - $1,599</option>
+                                <option value="RTX 4080">RTX 4080 (16GB) - $1,199</option>
+                                <option value="RTX 3090">RTX 3090 (24GB) - $899</option>
+                                <option value="RTX 3080">RTX 3080 (12GB) - $599</option>
+                                <option value="Tesla M10" selected>Tesla M10 (8GB) - $150 (Used)</option>
+                                <option value="H100 80GB">H100 80GB - $25,000</option>
+                                <option value="A100 80GB">A100 80GB - $15,000</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="gpu-count" class="form-label">Number of GPUs</label>
+                            <input type="number" class="form-control" id="gpu-count" value="4" min="1" max="8">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="memory-gb" class="form-label">System Memory (GB)</label>
+                            <select class="form-select" id="memory-gb">
+                                <option value="64">64GB - $256</option>
+                                <option value="128">128GB - $512</option>
+                                <option value="256" selected>256GB - $1,024</option>
+                                <option value="512">512GB - $2,048</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="storage-gb" class="form-label">Storage (GB)</label>
+                            <select class="form-select" id="storage-gb">
+                                <option value="1000">1TB NVMe - $80</option>
+                                <option value="2000" selected>2TB NVMe - $160</option>
+                                <option value="4000">4TB NVMe - $320</option>
+                                <option value="8000">8TB NVMe - $640</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Cloud Config -->
+                    <div id="cloud-config" style="display: none;">
+                        <div class="mb-3">
+                            <label for="cloud-provider" class="form-label">Cloud Provider</label>
+                            <select class="form-select" id="cloud-provider">
+                                <option value="aws">Amazon Web Services</option>
+                                <option value="gcp">Google Cloud Platform</option>
+                                <option value="runpod">RunPod</option>
+                                <option value="vast">Vast.ai</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="instance-type" class="form-label">Instance Type</label>
+                            <select class="form-select" id="instance-type">
+                                <!-- Populated by JavaScript -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Settings -->
+                    <div class="mb-3">
+                        <button class="btn btn-outline-secondary btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target="#advanced-settings">
+                            <i class="bi bi-gear"></i> Advanced Settings
+                        </button>
+                    </div>
+                    
+                    <div class="collapse" id="advanced-settings">
+                        <div class="mb-3">
+                            <label for="electricity-rate" class="form-label">Electricity Rate (USD/kWh)</label>
+                            <input type="number" class="form-control" id="electricity-rate" value="0.12" step="0.01">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="cooling-factor" class="form-label">Cooling Factor (%)</label>
+                            <input type="number" class="form-control" id="cooling-factor" value="30" min="0" max="100">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="maintenance-factor" class="form-label">Annual Maintenance (%)</label>
+                            <input type="number" class="form-control" id="maintenance-factor" value="2" min="0" max="10" step="0.1">
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary w-100" onclick="calculateCosts()">
+                        <i class="bi bi-calculator"></i> Calculate Costs
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cost Analysis Results -->
+    <div class="col-md-8 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up"></i>
+                    Cost Analysis Results
+                    <button class="btn btn-outline-success btn-sm ms-2" onclick="exportAnalysis()" style="display: none;" id="export-btn">
+                        <i class="bi bi-download"></i> Export
+                    </button>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="cost-results">
+                    <div class="text-center py-5">
+                        <i class="bi bi-calculator" style="font-size: 3rem; color: #6c757d;"></i>
+                        <h5 class="mt-3 text-muted">Run Cost Analysis</h5>
+                        <p class="text-muted">Configure your workload and deployment options on the left to see detailed cost breakdowns and ROI analysis.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ROI Comparison Chart -->
+    <div class="col-12 mb-4" id="roi-chart-container" style="display: none;">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bar-chart"></i>
+                    ROI Analysis & Service Comparison
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <canvas id="costComparisonChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <canvas id="roiTimelineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Optimization Recommendations -->
+    <div class="col-12 mb-4" id="optimization-container" style="display: none;">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightbulb"></i>
+                    Cost Optimization Recommendations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="optimization-recommendations">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scaling Analysis -->
+    <div class="col-12 mb-4" id="scaling-container" style="display: none;">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-arrows-angle-expand"></i>
+                    Scaling Cost Analysis
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="scaling-factors" class="form-label">Scale Factors</label>
+                        <div class="btn-group" role="group">
+                            <input type="checkbox" class="btn-check" id="scale-0.5x" value="0.5">
+                            <label class="btn btn-outline-primary" for="scale-0.5x">0.5x</label>
+                            
+                            <input type="checkbox" class="btn-check" id="scale-1x" value="1" checked>
+                            <label class="btn btn-outline-primary" for="scale-1x">1x</label>
+                            
+                            <input type="checkbox" class="btn-check" id="scale-2x" value="2" checked>
+                            <label class="btn btn-outline-primary" for="scale-2x">2x</label>
+                            
+                            <input type="checkbox" class="btn-check" id="scale-5x" value="5" checked>
+                            <label class="btn btn-outline-primary" for="scale-5x">5x</label>
+                            
+                            <input type="checkbox" class="btn-check" id="scale-10x" value="10" checked>
+                            <label class="btn btn-outline-primary" for="scale-10x">10x</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-secondary mt-4" onclick="calculateScaling()">
+                            <i class="bi bi-graph-up"></i> Analyze Scaling
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="scalingChart"></canvas>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="scaling-table">
+                            <thead>
+                                <tr>
+                                    <th>Scale Factor</th>
+                                    <th>Monthly Cost</th>
+                                    <th>Cost per 1K Tokens</th>
+                                    <th>Cost per Request</th>
+                                    <th>Efficiency Gain</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Cost Calculator JavaScript
+let currentAnalysis = null;
+let costComparisonChart = null;
+let roiTimelineChart = null;
+let scalingChart = null;
+
+// Cloud instance configurations
+const cloudConfigs = {
+    aws: {
+        'p4d.24xlarge': { cost: 32.77, gpus: 8, gpu_type: 'A100', vram: 320, description: '8x A100 80GB - High Performance' },
+        'p3.16xlarge': { cost: 24.48, gpus: 8, gpu_type: 'V100', vram: 128, description: '8x V100 32GB - Balanced' },
+        'g5.48xlarge': { cost: 16.29, gpus: 8, gpu_type: 'A10G', vram: 192, description: '8x A10G 24GB - Cost Effective' }
+    },
+    gcp: {
+        'a2-highgpu-8g': { cost: 12.00, gpus: 8, gpu_type: 'A100', vram: 320, description: '8x A100 80GB' },
+        'a2-highgpu-4g': { cost: 6.00, gpus: 4, gpu_type: 'A100', vram: 160, description: '4x A100 80GB' }
+    },
+    runpod: {
+        'RTX 4090': { cost: 0.50, gpus: 1, gpu_type: 'RTX 4090', vram: 24, description: 'RTX 4090 24GB' },
+        'A100 80GB': { cost: 1.89, gpus: 1, gpu_type: 'A100', vram: 80, description: 'A100 80GB' }
+    },
+    vast: {
+        'RTX 4090': { cost: 0.45, gpus: 1, gpu_type: 'RTX 4090', vram: 24, description: 'RTX 4090 24GB' },
+        'RTX 3090': { cost: 0.35, gpus: 1, gpu_type: 'RTX 3090', vram: 24, description: 'RTX 3090 24GB' }
+    }
+};
+
+// Initialize calculator
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+    updateCloudInstanceOptions();
+});
+
+function setupEventListeners() {
+    // Deployment type change
+    document.querySelectorAll('input[name="deployment-type"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateDeploymentConfig(this.value);
+        });
+    });
+    
+    // Cloud provider change
+    document.getElementById('cloud-provider').addEventListener('change', updateCloudInstanceOptions);
+}
+
+function updateDeploymentConfig(type) {
+    const consumerConfig = document.getElementById('consumer-gpu-config');
+    const cloudConfig = document.getElementById('cloud-config');
+    
+    if (type === 'consumer') {
+        consumerConfig.style.display = 'block';
+        cloudConfig.style.display = 'none';
+    } else if (type === 'cloud') {
+        consumerConfig.style.display = 'none';
+        cloudConfig.style.display = 'block';
+        updateCloudInstanceOptions();
+    } else { // compare
+        consumerConfig.style.display = 'none';
+        cloudConfig.style.display = 'none';
+    }
+}
+
+function updateCloudInstanceOptions() {
+    const provider = document.getElementById('cloud-provider').value;
+    const instanceSelect = document.getElementById('instance-type');
+    
+    instanceSelect.innerHTML = '';
+    
+    if (cloudConfigs[provider]) {
+        Object.entries(cloudConfigs[provider]).forEach(([instance, config]) => {
+            const option = document.createElement('option');
+            option.value = instance;
+            option.textContent = `${instance} - $${config.cost.toFixed(2)}/hr (${config.description})`;
+            instanceSelect.appendChild(option);
+        });
+    }
+}
+
+async function calculateCosts() {
+    const deploymentType = document.querySelector('input[name="deployment-type"]:checked').value;
+    
+    // Collect workload data
+    const workload = {
+        requests_per_day: parseInt(document.getElementById('requests-per-day').value),
+        avg_tokens_per_request: parseInt(document.getElementById('avg-tokens').value),
+        peak_concurrent_requests: parseInt(document.getElementById('peak-concurrent').value),
+        uptime_hours_per_day: parseFloat(document.getElementById('uptime-hours').value),
+        growth_rate_monthly: parseFloat(document.getElementById('growth-rate').value) / 100
+    };
+    
+    try {
+        let analysisResult;
+        
+        if (deploymentType === 'compare') {
+            analysisResult = await compareAllOptions(workload);
+        } else if (deploymentType === 'consumer') {
+            const config = {
+                gpu_type: document.getElementById('gpu-type').value,
+                gpu_count: parseInt(document.getElementById('gpu-count').value),
+                memory_gb: parseInt(document.getElementById('memory-gb').value),
+                storage_gb: parseInt(document.getElementById('storage-gb').value)
+            };
+            analysisResult = await calculateConsumerCosts(config, workload);
+        } else { // cloud
+            const config = {
+                provider: document.getElementById('cloud-provider').value,
+                instance_type: document.getElementById('instance-type').value
+            };
+            analysisResult = await calculateCloudCosts(config, workload);
+        }
+        
+        currentAnalysis = analysisResult;
+        displayResults(analysisResult, deploymentType === 'compare');
+        
+    } catch (error) {
+        console.error('Error calculating costs:', error);
+        DashboardUtils.showToast('Failed to calculate costs', 'error');
+    }
+}
+
+async function calculateConsumerCosts(config, workload) {
+    // Simulate consumer GPU cost calculation
+    const gpuPrices = {
+        'RTX 4090': { cost: 1599, vram: 24, power: 450 },
+        'RTX 4080': { cost: 1199, vram: 16, power: 320 },
+        'RTX 3090': { cost: 899, vram: 24, power: 350 },
+        'RTX 3080': { cost: 599, vram: 12, power: 320 },
+        'Tesla M10': { cost: 150, vram: 8, power: 225 },
+        'H100 80GB': { cost: 25000, vram: 80, power: 700 },
+        'A100 80GB': { cost: 15000, vram: 80, power: 400 }
+    };
+    
+    const gpu = gpuPrices[config.gpu_type];
+    const totalGpuCost = gpu.cost * config.gpu_count;
+    const totalPower = gpu.power * config.gpu_count + 300; // Additional system power
+    
+    // Calculate monthly costs
+    const monthlyHardwareCost = totalGpuCost / (4 * 12); // 4-year amortization
+    const monthlyPowerCost = (totalPower / 1000) * 0.12 * (workload.uptime_hours_per_day * 30); // $0.12/kWh
+    const monthlyOperationalCost = 200; // Internet, maintenance, etc.
+    
+    const totalMonthlyCost = monthlyHardwareCost + monthlyPowerCost + monthlyOperationalCost;
+    
+    // Calculate per-token costs
+    const monthlyTokens = workload.requests_per_day * 30 * workload.avg_tokens_per_request;
+    const costPer1kTokens = (totalMonthlyCost / monthlyTokens) * 1000;
+    
+    return {
+        deployment_type: 'consumer_gpu',
+        total_cost_monthly_usd: totalMonthlyCost,
+        total_cost_yearly_usd: totalMonthlyCost * 12,
+        cost_per_1k_tokens: costPer1kTokens,
+        cost_per_request: totalMonthlyCost / (workload.requests_per_day * 30),
+        cost_breakdown: {
+            hardware_amortization: monthlyHardwareCost,
+            electricity: monthlyPowerCost,
+            operational: monthlyOperationalCost
+        },
+        hardware_specs: {
+            gpu_type: config.gpu_type,
+            gpu_count: config.gpu_count,
+            total_vram: gpu.vram * config.gpu_count,
+            power_consumption: totalPower
+        },
+        comparison_baselines: {
+            'OpenAI GPT-4': 0.03,
+            'Anthropic Claude': 0.025,
+            'Google Gemini Pro': 0.00125,
+            'Together AI': 0.008
+        }
+    };
+}
+
+async function calculateCloudCosts(config, workload) {
+    const instanceConfig = cloudConfigs[config.provider][config.instance_type];
+    
+    const monthlyInstanceCost = instanceConfig.cost * (workload.uptime_hours_per_day * 30);
+    const monthlyStorageCost = 100; // Estimated storage costs
+    const monthlyBandwidthCost = 50; // Estimated bandwidth costs
+    
+    const totalMonthlyCost = monthlyInstanceCost + monthlyStorageCost + monthlyBandwidthCost;
+    
+    // Calculate per-token costs
+    const monthlyTokens = workload.requests_per_day * 30 * workload.avg_tokens_per_request;
+    const costPer1kTokens = (totalMonthlyCost / monthlyTokens) * 1000;
+    
+    return {
+        deployment_type: 'cloud_instance',
+        total_cost_monthly_usd: totalMonthlyCost,
+        total_cost_yearly_usd: totalMonthlyCost * 12,
+        cost_per_1k_tokens: costPer1kTokens,
+        cost_per_request: totalMonthlyCost / (workload.requests_per_day * 30),
+        cost_breakdown: {
+            compute_instances: monthlyInstanceCost,
+            storage: monthlyStorageCost,
+            bandwidth: monthlyBandwidthCost
+        },
+        cloud_specs: {
+            provider: config.provider,
+            instance_type: config.instance_type,
+            hourly_cost: instanceConfig.cost,
+            gpu_type: instanceConfig.gpu_type,
+            gpu_count: instanceConfig.gpus
+        },
+        comparison_baselines: {
+            'OpenAI GPT-4': 0.03,
+            'Anthropic Claude': 0.025,
+            'Google Gemini Pro': 0.00125,
+            'Together AI': 0.008
+        }
+    };
+}
+
+async function compareAllOptions(workload) {
+    // Calculate multiple deployment options
+    const consumerConfig = {
+        gpu_type: 'Tesla M10',
+        gpu_count: 4,
+        memory_gb: 256,
+        storage_gb: 2000
+    };
+    
+    const cloudConfig = {
+        provider: 'runpod',
+        instance_type: 'RTX 4090'
+    };
+    
+    const [consumerAnalysis, cloudAnalysis] = await Promise.all([
+        calculateConsumerCosts(consumerConfig, workload),
+        calculateCloudCosts(cloudConfig, workload)
+    ]);
+    
+    return {
+        comparisons: {
+            'Consumer GPU (4x Tesla M10)': consumerAnalysis,
+            'RunPod RTX 4090': cloudAnalysis
+        },
+        winner: consumerAnalysis.cost_per_1k_tokens < cloudAnalysis.cost_per_1k_tokens ? 
+                'Consumer GPU (4x Tesla M10)' : 'RunPod RTX 4090'
+    };
+}
+
+function displayResults(results, isComparison) {
+    const container = document.getElementById('cost-results');
+    
+    if (isComparison) {
+        displayComparisonResults(results, container);
+    } else {
+        displaySingleResult(results, container);
+    }
+    
+    // Show additional sections
+    document.getElementById('roi-chart-container').style.display = 'block';
+    document.getElementById('optimization-container').style.display = 'block';
+    document.getElementById('scaling-container').style.display = 'block';
+    document.getElementById('export-btn').style.display = 'inline-block';
+    
+    // Generate charts
+    generateCostCharts(results, isComparison);
+    generateOptimizationRecommendations(results, isComparison);
+}
+
+function displaySingleResult(analysis, container) {
+    const breakdown = analysis.cost_breakdown;
+    
+    container.innerHTML = `
+        <div class="row">
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value">$${analysis.total_cost_monthly_usd.toFixed(0)}</div>
+                    <div class="metric-label">Monthly Cost</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value">$${analysis.cost_per_1k_tokens.toFixed(4)}</div>
+                    <div class="metric-label">Per 1K Tokens</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value">$${analysis.cost_per_request.toFixed(4)}</div>
+                    <div class="metric-label">Per Request</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value">$${analysis.total_cost_yearly_usd.toFixed(0)}</div>
+                    <div class="metric-label">Yearly Cost</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h6>Cost Breakdown</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        ${Object.entries(breakdown).map(([category, cost]) => `
+                            <tr>
+                                <td>${category.replace('_', ' ').toUpperCase()}</td>
+                                <td class="text-end">$${cost.toFixed(2)}/month</td>
+                                <td class="text-end">${((cost / analysis.total_cost_monthly_usd) * 100).toFixed(1)}%</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h6>Service Comparison</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        ${Object.entries(analysis.comparison_baselines).map(([service, cost]) => {
+                            const savings = cost - analysis.cost_per_1k_tokens;
+                            const savingsPercent = ((savings / cost) * 100).toFixed(1);
+                            const savingsClass = savings > 0 ? 'text-success' : 'text-danger';
+                            return `
+                                <tr>
+                                    <td>${service}</td>
+                                    <td class="text-end">$${cost.toFixed(4)}</td>
+                                    <td class="text-end ${savingsClass}">
+                                        ${savings > 0 ? '-' : '+'}${Math.abs(savingsPercent)}%
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        ${analysis.hardware_specs ? `
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h6>Hardware Configuration</h6>
+                    <p><strong>GPU:</strong> ${analysis.hardware_specs.gpu_count}x ${analysis.hardware_specs.gpu_type}</p>
+                    <p><strong>Total VRAM:</strong> ${analysis.hardware_specs.total_vram}GB</p>
+                    <p><strong>Power Consumption:</strong> ${analysis.hardware_specs.power_consumption}W</p>
+                </div>
+            </div>
+        ` : ''}
+        
+        ${analysis.cloud_specs ? `
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h6>Cloud Configuration</h6>
+                    <p><strong>Provider:</strong> ${analysis.cloud_specs.provider.toUpperCase()}</p>
+                    <p><strong>Instance:</strong> ${analysis.cloud_specs.instance_type}</p>
+                    <p><strong>GPU:</strong> ${analysis.cloud_specs.gpu_count}x ${analysis.cloud_specs.gpu_type}</p>
+                    <p><strong>Hourly Rate:</strong> $${analysis.cloud_specs.hourly_cost}/hour</p>
+                </div>
+            </div>
+        ` : ''}
+    `;
+}
+
+function displayComparisonResults(results, container) {
+    const comparisons = results.comparisons;
+    
+    let html = `
+        <div class="alert alert-info">
+            <strong>Winner:</strong> ${results.winner} offers the best cost-effectiveness for your workload.
+        </div>
+        
+        <div class="row">
+    `;
+    
+    Object.entries(comparisons).forEach(([name, analysis]) => {
+        const isWinner = name === results.winner;
+        html += `
+            <div class="col-md-6">
+                <div class="card ${isWinner ? 'border-success' : ''}">
+                    <div class="card-header ${isWinner ? 'bg-success text-white' : ''}">
+                        <h6 class="mb-0">${name} ${isWinner ? '🏆' : ''}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <strong>$${analysis.total_cost_monthly_usd.toFixed(0)}</strong><br>
+                                <small>Monthly</small>
+                            </div>
+                            <div class="col-6">
+                                <strong>$${analysis.cost_per_1k_tokens.toFixed(4)}</strong><br>
+                                <small>Per 1K Tokens</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <h6>Cost Breakdown</h6>
+                            ${Object.entries(analysis.cost_breakdown).map(([category, cost]) => `
+                                <div class="d-flex justify-content-between">
+                                    <span>${category.replace('_', ' ')}</span>
+                                    <span>$${cost.toFixed(0)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function generateCostCharts(results, isComparison) {
+    // Cost comparison chart
+    const costCtx = document.getElementById('costComparisonChart').getContext('2d');
+    
+    if (costComparisonChart) {
+        costComparisonChart.destroy();
+    }
+    
+    let chartData;
+    
+    if (isComparison) {
+        const comparisons = results.comparisons;
+        chartData = {
+            labels: Object.keys(comparisons),
+            datasets: [{
+                label: 'Monthly Cost ($)',
+                data: Object.values(comparisons).map(a => a.total_cost_monthly_usd),
+                backgroundColor: ['rgba(40, 167, 69, 0.8)', 'rgba(0, 123, 255, 0.8)'],
+                borderColor: ['rgba(40, 167, 69, 1)', 'rgba(0, 123, 255, 1)'],
+                borderWidth: 1
+            }]
+        };
+    } else {
+        // Compare with baseline services
+        const baselines = results.comparison_baselines;
+        const monthlyTokens = 30 * 1000 * 500; // Example: 30 days * 1000 requests * 500 tokens
+        
+        chartData = {
+            labels: ['Self-Hosted', ...Object.keys(baselines)],
+            datasets: [{
+                label: 'Monthly Cost ($)',
+                data: [
+                    results.total_cost_monthly_usd,
+                    ...Object.values(baselines).map(price => (monthlyTokens / 1000) * price)
+                ],
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.8)',
+                    ...Array(Object.keys(baselines).length).fill('rgba(220, 53, 69, 0.8)')
+                ],
+                borderColor: [
+                    'rgba(40, 167, 69, 1)',
+                    ...Array(Object.keys(baselines).length).fill('rgba(220, 53, 69, 1)')
+                ],
+                borderWidth: 1
+            }]
+        };
+    }
+    
+    costComparisonChart = new Chart(costCtx, {
+        type: 'bar',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Monthly Cost Comparison'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(0);
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // ROI timeline chart
+    generateROIChart(results, isComparison);
+}
+
+function generateROIChart(results, isComparison) {
+    const roiCtx = document.getElementById('roiTimelineChart').getContext('2d');
+    
+    if (roiTimelineChart) {
+        roiTimelineChart.destroy();
+    }
+    
+    // Generate ROI data over time
+    const months = Array.from({length: 24}, (_, i) => i + 1);
+    const analysis = isComparison ? Object.values(results.comparisons)[0] : results;
+    
+    const cumulativeCosts = months.map(month => analysis.total_cost_monthly_usd * month);
+    const baselineCost = 0.02; // Average baseline cost per 1K tokens
+    const monthlyTokens = 30 * 1000 * 500; // Example workload
+    const baselineCumulativeCosts = months.map(month => (monthlyTokens / 1000) * baselineCost * month);
+    
+    roiTimelineChart = new Chart(roiCtx, {
+        type: 'line',
+        data: {
+            labels: months.map(m => `Month ${m}`),
+            datasets: [
+                {
+                    label: 'Self-Hosted Cumulative Cost',
+                    data: cumulativeCosts,
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Baseline Service Cost',
+                    data: baselineCumulativeCosts,
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: '24-Month Cost Projection'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(0);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function generateOptimizationRecommendations(results, isComparison) {
+    const container = document.getElementById('optimization-recommendations');
+    const analysis = isComparison ? Object.values(results.comparisons)[0] : results;
+    
+    // Generate recommendations based on analysis
+    const recommendations = [];
+    
+    if (analysis.deployment_type === 'consumer_gpu') {
+        if (analysis.cost_breakdown.electricity > 300) {
+            recommendations.push({
+                type: 'Power Optimization',
+                description: 'High electricity costs detected. Consider power optimization strategies.',
+                savings: '$' + (analysis.cost_breakdown.electricity * 0.2).toFixed(0) + '/month',
+                difficulty: 'Moderate',
+                actions: [
+                    'Implement GPU undervolting for 10-15% power reduction',
+                    'Optimize cooling curves and fan profiles',
+                    'Schedule intensive workloads during off-peak hours',
+                    'Consider solar panels for long-term savings'
+                ]
+            });
+        }
+        
+        if (analysis.hardware_specs.gpu_type === 'RTX 4090' && analysis.cost_per_1k_tokens > 0.01) {
+            recommendations.push({
+                type: 'Hardware Right-sizing',
+                description: 'RTX 4090s may be overpowered for your workload.',
+                savings: '$' + (analysis.total_cost_monthly_usd * 0.4).toFixed(0) + '/month',
+                difficulty: 'Easy',
+                actions: [
+                    'Evaluate actual GPU utilization patterns',
+                    'Consider RTX 3090 for 80% of performance at 60% cost',
+                    'Tesla M10 provides excellent cost/performance for smaller models',
+                    'Multi-GPU setup with smaller cards for better efficiency'
+                ]
+            });
+        }
+    }
+    
+    if (analysis.deployment_type === 'cloud_instance') {
+        recommendations.push({
+            type: 'Spot Instances',
+            description: 'Use spot instances for significant cost savings.',
+            savings: '$' + (analysis.cost_breakdown.compute_instances * 0.6).toFixed(0) + '/month',
+            difficulty: 'Moderate',
+            actions: [
+                'Implement fault-tolerant request handling',
+                'Use spot instance pools across multiple availability zones',
+                'Automatic failover to on-demand instances',
+                'Schedule batch workloads appropriately'
+            ]
+        });
+        
+        recommendations.push({
+            type: 'Reserved Instances',
+            description: 'Commit to 1-year terms for predictable workloads.',
+            savings: '$' + (analysis.cost_breakdown.compute_instances * 0.3).toFixed(0) + '/month',
+            difficulty: 'Easy',
+            actions: [
+                'Analyze usage patterns over past 3 months',
+                'Purchase reserved instances for baseline capacity',
+                'Use on-demand for peak traffic only',
+                'Consider 3-year reservations for maximum savings'
+            ]
+        });
+    }
+    
+    // Always include scaling recommendation
+    recommendations.push({
+        type: 'Workload Optimization',
+        description: 'Optimize request patterns and batching for better efficiency.',
+        savings: '$' + (analysis.total_cost_monthly_usd * 0.15).toFixed(0) + '/month',
+        difficulty: 'Easy',
+        actions: [
+            'Implement request batching for higher throughput',
+            'Cache frequently requested responses',
+            'Optimize model context usage',
+            'Load balance across multiple model instances'
+        ]
+    });
+    
+    let html = '';
+    recommendations.forEach((rec, index) => {
+        const difficultyClass = rec.difficulty === 'Easy' ? 'success' : 
+                              rec.difficulty === 'Moderate' ? 'warning' : 'danger';
+        
+        html += `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="card-title">
+                                ${rec.type}
+                                <span class="badge bg-${difficultyClass} ms-2">${rec.difficulty}</span>
+                            </h6>
+                            <p class="card-text">${rec.description}</p>
+                            <h6>Action Items:</h6>
+                            <ul class="list-unstyled">
+                                ${rec.actions.map(action => `<li><i class="bi bi-check-circle text-success"></i> ${action}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="h4 text-success">${rec.savings}</div>
+                            <small class="text-muted">Potential Savings</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function calculateScaling() {
+    if (!currentAnalysis) {
+        DashboardUtils.showToast('Please run cost analysis first', 'warning');
+        return;
+    }
+    
+    // Get selected scale factors
+    const scaleFactors = [];
+    document.querySelectorAll('input[type="checkbox"][id^="scale-"]:checked').forEach(checkbox => {
+        scaleFactors.push(parseFloat(checkbox.value));
+    });
+    
+    if (scaleFactors.length === 0) {
+        DashboardUtils.showToast('Please select at least one scale factor', 'warning');
+        return;
+    }
+    
+    const baseAnalysis = currentAnalysis.comparisons ? Object.values(currentAnalysis.comparisons)[0] : currentAnalysis;
+    
+    // Calculate scaling costs
+    const scalingData = scaleFactors.map(factor => {
+        let scaledMonthlyCost = baseAnalysis.total_cost_monthly_usd;
+        
+        if (baseAnalysis.deployment_type === 'consumer_gpu') {
+            // Hardware scales in discrete steps
+            if (factor > 1) {
+                scaledMonthlyCost *= factor;
+                // Some efficiency gains at scale
+                if (factor > 2) scaledMonthlyCost *= 0.9;
+            }
+        } else {
+            // Cloud scales more linearly
+            scaledMonthlyCost *= factor;
+            // Volume discounts
+            if (factor > 5) scaledMonthlyCost *= 0.9;
+        }
+        
+        return {
+            factor: factor,
+            monthly_cost: scaledMonthlyCost,
+            cost_per_1k_tokens: baseAnalysis.cost_per_1k_tokens / factor, // Better efficiency at scale
+            cost_per_request: baseAnalysis.cost_per_request / factor,
+            efficiency_gain: ((1 - (scaledMonthlyCost / (baseAnalysis.total_cost_monthly_usd * factor))) * 100).toFixed(1)
+        };
+    });
+    
+    // Generate scaling chart
+    generateScalingChart(scalingData);
+    
+    // Update scaling table
+    updateScalingTable(scalingData);
+}
+
+function generateScalingChart(scalingData) {
+    const scalingCtx = document.getElementById('scalingChart').getContext('2d');
+    
+    if (scalingChart) {
+        scalingChart.destroy();
+    }
+    
+    scalingChart = new Chart(scalingCtx, {
+        type: 'line',
+        data: {
+            labels: scalingData.map(d => `${d.factor}x`),
+            datasets: [
+                {
+                    label: 'Monthly Cost ($)',
+                    data: scalingData.map(d => d.monthly_cost),
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Cost per 1K Tokens ($)',
+                    data: scalingData.map(d => d.cost_per_1k_tokens),
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Monthly Cost ($)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Cost per 1K Tokens ($)'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Scaling Cost Analysis'
+                }
+            }
+        }
+    });
+}
+
+function updateScalingTable(scalingData) {
+    const tbody = document.querySelector('#scaling-table tbody');
+    
+    tbody.innerHTML = scalingData.map(data => `
+        <tr>
+            <td>${data.factor}x</td>
+            <td>$${data.monthly_cost.toFixed(0)}</td>
+            <td>$${data.cost_per_1k_tokens.toFixed(4)}</td>
+            <td>$${data.cost_per_request.toFixed(4)}</td>
+            <td class="${data.efficiency_gain > 0 ? 'text-success' : 'text-warning'}">
+                ${data.efficiency_gain > 0 ? '+' : ''}${data.efficiency_gain}%
+            </td>
+        </tr>
+    `).join('');
+}
+
+function exportAnalysis() {
+    if (!currentAnalysis) {
+        DashboardUtils.showToast('No analysis data to export', 'warning');
+        return;
+    }
+    
+    const exportData = {
+        timestamp: new Date().toISOString(),
+        analysis: currentAnalysis,
+        workload_config: {
+            requests_per_day: document.getElementById('requests-per-day').value,
+            avg_tokens_per_request: document.getElementById('avg-tokens').value,
+            peak_concurrent_requests: document.getElementById('peak-concurrent').value,
+            uptime_hours_per_day: document.getElementById('uptime-hours').value,
+            growth_rate_monthly: document.getElementById('growth-rate').value
+        }
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cost-analysis-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    DashboardUtils.showToast('Cost analysis exported successfully', 'success');
+}
+</script>
+{% endblock %}
