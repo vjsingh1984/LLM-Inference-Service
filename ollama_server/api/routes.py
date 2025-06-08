@@ -391,8 +391,61 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
                     'api_format': getattr(req_status, 'api_format', 'unknown')
                 })
             
-            # Get models
+            # Get models with enhanced context detection
             models_data = handler.handle_models_list(model_manager, 'ollama')
+            
+            # Enhance models with accurate context sizes from model inspector
+            enhanced_models = []
+            if 'models' in models_data:
+                for model in models_data['models']:
+                    try:
+                        # Use the same logic as the show endpoint to get enhanced model info
+                        model_mapping = model_manager.build_model_mapping()
+                        base_model_info = None
+                        
+                        # Try exact match first
+                        if model['name'] in model_mapping:
+                            base_model_info = model_manager.get_model_info(model['name'])
+                        
+                        if base_model_info:
+                            # Get enhanced model info using the inspector (same as show endpoint)
+                            enhanced_info = model_inspector.get_enhanced_model_info(model['name'], base_model_info)
+                            
+                            # Build model_info section with accurate context length
+                            architecture = enhanced_info.get('architecture', 'unknown')
+                            context_length = enhanced_info.get('context_size', 4096)
+                            
+                            # Generate model_info that matches real Ollama format
+                            model_info_section = {
+                                'general.architecture': architecture,
+                                'general.context_length': context_length,
+                                f'{architecture}.context_length': context_length,
+                                f'{architecture}.embedding_length': enhanced_info.get('embedding_length', context_length)
+                            }
+                            
+                            # Update the model with enhanced info
+                            model.update({
+                                'context_size': context_length,
+                                'model_info': model_info_section
+                            })
+                            
+                            logger.info(f"Enhanced model {model['name']}: context_size={context_length}")
+                        else:
+                            logger.warning(f"Could not find model info for {model['name']}")
+                            # Set default values
+                            model.update({
+                                'context_size': 4096,
+                                'model_info': {'general.context_length': 4096}
+                            })
+                    except Exception as e:
+                        logger.exception(f"Error enhancing model {model['name']}: {e}")
+                        # Set default values
+                        model.update({
+                            'context_size': 4096,
+                            'model_info': {'general.context_length': 4096}
+                        })
+                    enhanced_models.append(model)
+                models_data['models'] = enhanced_models
             
             # Get GPU metrics
             gpu_metrics = gpu_monitor.to_dict()
