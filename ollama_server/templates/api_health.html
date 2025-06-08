@@ -634,18 +634,18 @@ function updateAPIMetricsTable(endpoints) {
                     <strong>${endpoint.responseTime}ms</strong>
                 </td>
                 <td>
-                    <strong>${endpoint.requestsPerMin}</strong>
+                    <strong>${endpoint.requestsPerMin > 0 ? endpoint.requestsPerMin : 'No requests'}</strong>
                 </td>
                 <td>
                     <div class="d-flex align-items-center">
                         <div class="progress me-2" style="width: 60px; height: 8px;">
                             <div class="progress-bar bg-success" style="width: ${endpoint.successRate}%"></div>
                         </div>
-                        <span><strong>${endpoint.successRate}%</strong></span>
+                        <span><strong>${endpoint.successRate > 0 ? endpoint.successRate + '%' : 'No data'}</strong></span>
                     </div>
                 </td>
                 <td>
-                    <span class="text-danger"><strong>${endpoint.errorRate}%</strong></span>
+                    <span class="text-danger"><strong>${endpoint.errorRate > 0 ? endpoint.errorRate + '%' : '0%'}</strong></span>
                 </td>
                 <td>
                     <small>${new Date(endpoint.lastCheck).toLocaleTimeString()}</small>
