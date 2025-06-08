@@ -484,6 +484,17 @@ async function refreshModelData() {
         // Store data globally for use in calculations
         window.dashboardData = data;
         
+        // Also fetch GPU metrics for accurate allocation info
+        try {
+            const gpuResponse = await fetch('/api/metrics/gpu');
+            if (gpuResponse.ok) {
+                const gpuData = await gpuResponse.json();
+                window.dashboardData.gpu_metrics = gpuData;
+            }
+        } catch (error) {
+            console.warn('Could not fetch GPU metrics:', error);
+        }
+        
         if (!data.models || data.models.length === 0) {
             console.warn('No models found in response');
         } else {
@@ -758,14 +769,35 @@ function updateDetailedModelTable(models) {
         // Determine actual status based on recent requests
         const recentRequests = (window.dashboardData?.requests || []).filter(r => r.model === model.name);
         const activeRequests = recentRequests.filter(r => r.status === 'generating' || r.status === 'processing');
+        const completedRequests = recentRequests.filter(r => r.status === 'completed');
+        const errorRequests = recentRequests.filter(r => r.status === 'error');
         
-        const status = activeRequests.length > 0 ? 'Active' : 
-                      recentRequests.length > 0 ? 'Recent' : 'Available';
-        const statusClass = status === 'Active' ? 'bg-success' : 
-                           status === 'Recent' ? 'bg-warning' : 'bg-secondary';
+        let status, statusClass;
+        if (activeRequests.length > 0) {
+            status = 'Active';
+            statusClass = 'bg-success';
+        } else if (errorRequests.length > completedRequests.length && errorRequests.length > 0) {
+            status = 'Error';
+            statusClass = 'bg-danger';
+        } else if (completedRequests.length > 0) {
+            status = 'Available';
+            statusClass = 'bg-primary';
+        } else {
+            status = 'Unused';
+            statusClass = 'bg-secondary';
+        }
         
-        // GPU allocation - for now show 'Multi-GPU' or 'Unknown'
-        const gpuAllocation = 'Multi-GPU';
+        // GPU allocation - check if model is actually using GPU resources
+        let gpuAllocation = 'Not loaded';
+        if (window.dashboardData?.gpu_metrics?.gpus) {
+            const activeGPUs = window.dashboardData.gpu_metrics.gpus.filter(gpu => gpu.utilization_gpu > 0 || gpu.memory_used > 500);
+            if (activeGPUs.length > 0) {
+                gpuAllocation = `GPU ${activeGPUs.map(g => g.gpu_id).join(',')} (${activeGPUs.length}/${window.dashboardData.gpu_metrics.gpus.length})`;
+            } else if (completedRequests.length > 0 || activeRequests.length > 0) {
+                // If we have recent activity but no current GPU usage, it was recently active
+                gpuAllocation = `Multi-GPU (4 Tesla M10)`;
+            }
+        }
         
         // Calculate average response time
         const avgResponseTime = modelRequests.length > 0 ? 
@@ -783,10 +815,10 @@ function updateDetailedModelTable(models) {
                 </td>
                 <td>${model.context_size ? Math.round(model.context_size / 1024) + 'K' : 'Unknown'}</td>
                 <td>
-                    <span class="badge bg-info">${gpuAllocation}</span>
+                    <span class="badge ${gpuAllocation.includes('GPU') ? 'bg-success' : 'bg-secondary'}">${gpuAllocation}</span>
                 </td>
                 <td>
-                    <strong>${performance > 0 ? performance : 'No data'}</strong> ${performance > 0 ? 'tok/s' : ''}<br>
+                    <strong>${performance > 0 ? performance + ' tok/s' : 'No data'}</strong><br>
                     <small class="text-muted">${avgResponseTime > 0 ? avgResponseTime + 'ms avg' : 'No data'}</small>
                 </td>
                 <td>
