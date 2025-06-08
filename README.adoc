@@ -72,8 +72,6 @@ A clean, modular codebase with format-specific adapters ensures compatibility ac
 
 == Architecture
 
-=== System Architecture
-
 The LLM Inference Service follows a modular architecture with clear separation of concerns:
 
 === Core Components
@@ -114,54 +112,55 @@ The deployment follows a production-ready pattern:
 * **SystemD Service Management**: Auto-restart and lifecycle management
 * **Multi-GPU Configuration**: 4x Tesla M10 GPUs with equal tensor splits
 * **Persistent Storage**: Model repository and configuration management
-* **Network Security**: Firewall and load balancer integration
+* **Network Security**: SSL/TLS configuration
 * **Client Access**: Support for web, API, and CLI interfaces
 
 === Technical Design Patterns
 
-=== Adapter Pattern
+==== Adapter Pattern
 Used for multi-API compatibility, allowing seamless support for different AI service formats.
 
-=== Observer Pattern
+==== Observer Pattern
 Implemented in monitoring systems for real-time metric collection and alerting.
 
-=== Strategy Pattern
+==== Strategy Pattern
 Applied in model selection and execution strategies based on workload characteristics.
 
-=== Factory Pattern
+==== Factory Pattern
 Used for creating appropriate adapters and executors based on request types.
 
 === Component Details
 
-=== API Gateway Layer
+==== API Gateway Layer
 - **Flask API Server**: Main HTTP server handling all requests
 - **Route Handlers**: URL routing and endpoint management
 - **Request Validation**: Input validation and security checks
 
-=== Request Processing
+==== Request Processing
 - **Request Adapters**: Format-specific request transformers
 - **Model Manager**: Model discovery and metadata management
 - **Request Tracker**: Active request monitoring and progress tracking
 
-=== Inference Engine
+==== Inference Engine
 - **LLAMA Executor**: Core inference execution using llama.cpp
 - **GPU Manager**: Multi-GPU resource allocation and monitoring
 - **Response Processor**: Output formatting and post-processing
 
-=== Monitoring & Analytics
+==== Monitoring & Analytics
 - **GPU Monitor**: Real-time GPU utilization and thermal monitoring
 - **API Metrics**: Request performance and endpoint health tracking
 - **Production Monitor**: System health scoring and alerting
 
-=== Utilities
+==== Utilities
 - **Model Inspector**: Dynamic model capability detection
 - **Hardware Optimizer**: System optimization analysis and recommendations
 - **Cost Calculator**: Deployment cost analysis and planning
+
 == Features
 
 === Core Features
 
-=== Multi-API Compatibility
+==== Multi-API Compatibility
 
 The service provides comprehensive API compatibility with major LLM providers:
 
@@ -180,7 +179,7 @@ image::images/api-compatibility.png[API Compatibility,700,500]
 * Format-specific response handling
 * Think tag preservation for reasoning models
 
-=== Dynamic Model Management
+==== Dynamic Model Management
 
 .Model Management System
 image::images/model-management.png[Model Management,700,500]
@@ -197,7 +196,7 @@ image::images/model-management.png[Model Management,700,500]
 * Context window validation and optimization
 * Performance characteristic analysis
 
-=== GPU Management & Optimization
+==== GPU Management & Optimization
 
 .GPU Management Architecture  
 image::images/gpu-management.png[GPU Management,700,500]
@@ -216,7 +215,7 @@ image::images/gpu-management.png[GPU Management,700,500]
 
 === Advanced Features
 
-=== Think Tag Preservation
+==== Think Tag Preservation
 
 Special handling for reasoning models that use internal thought processes:
 
@@ -229,7 +228,7 @@ image::images/think-tag-flow.png[Think Tag Flow,600,400]
 * **Model Support**: phi4-reasoning, deepseek-r1, and other reasoning models
 * **Transparency**: Optional think content exposure for debugging and analysis
 
-=== Real-time Monitoring Dashboard
+==== Real-time Monitoring Dashboard
 
 .Web Dashboard Features
 image::images/monitoring-features.png[Monitoring Features,800,600]
@@ -248,7 +247,7 @@ image::images/monitoring-features.png[Monitoring Features,800,600]
 * **Configuration**: Dynamic system settings with optimization presets
 * **Production Monitor**: Health scoring and automated alerting
 
-=== Hardware Optimization System
+==== Hardware Optimization System
 
 .Hardware Optimization Engine
 image::images/hardware-optimization.png[Hardware Optimization,700,500]
@@ -267,47 +266,47 @@ image::images/hardware-optimization.png[Hardware Optimization,700,500]
 
 === Dashboard Screenshots
 
-=== Main Dashboard
+==== Main Dashboard
 image::images/llm-service-main-dashboard.png[Main Dashboard,1200,800]
 
 The main dashboard provides a unified view of system status, active requests, and real-time GPU monitoring.
 
-=== GPU Monitor Dashboard
+==== GPU Monitor Dashboard
 image::images/llm-service-main-gpudetail.png[GPU Monitor,1200,800]
 
 Detailed GPU monitoring with temperature, utilization, and memory tracking for each Tesla M10 GPU.
 
-=== Configuration Panel
+==== Configuration Panel
 image::images/llm-service-main-configset.png[Configuration Panel,1200,800]
 
 Dynamic configuration panel allowing real-time system adjustments and optimization presets.
 
-=== Optimization Dashboard
-image::images/optimization-dashboard-screenshot.png[Optimization Dashboard,1200,800]
+==== Optimization Dashboard
+image::images/llm-service-main-optimization.png[Optimization Dashboard,1200,800]
 
 Hardware optimization insights with scoring, recommendations, and system analysis.
 
 === Production Features
 
-=== Model Analytics
+==== Model Analytics
 * **Performance Benchmarking**: Comprehensive model comparison and analysis
 * **Context Detection**: Automatic identification of true context capabilities
 * **Usage Patterns**: Statistical analysis of model utilization
 * **Optimization Recommendations**: Model-specific performance tuning
 
-=== API Metrics Tracking
+==== API Metrics Tracking
 * **Real-time Performance**: Actual endpoint response times and success rates
 * **Error Analysis**: Detailed failure tracking and categorization
 * **Usage Statistics**: Request volume and pattern analysis
 * **Health Monitoring**: Automated endpoint health assessment
 
-=== Configuration Management
+==== Configuration Management
 * **Dynamic Updates**: Real-time configuration changes without restart
 * **Preset Profiles**: High Performance, Balanced, and Conservative modes
 * **Validation**: Configuration impact analysis and validation
 * **Backup/Restore**: Configuration versioning and rollback capabilities
 
-=== Cost Analysis
+==== Cost Analysis
 * **Deployment Planning**: TCO analysis for hardware configurations  
 * **ROI Calculator**: Cost-benefit analysis for different setups
 * **Efficiency Metrics**: Performance per dollar optimization
@@ -315,17 +314,18 @@ Hardware optimization insights with scoring, recommendations, and system analysi
 
 === Integration Features
 
-=== External Service Integration
+==== External Service Integration
 * **Ollama CLI**: Direct integration for model inspection and management
 * **NVIDIA Drivers**: Real-time GPU monitoring and management
 * **SystemD**: Production service lifecycle management
 * **Prometheus**: Metrics export for external monitoring systems
 
-=== Development Tools
+==== Development Tools
 * **Debug Mode**: Enhanced logging and troubleshooting capabilities
 * **Testing Framework**: Comprehensive API and system testing
 * **Documentation**: Auto-generated API documentation and examples
 * **Development Server**: Hot-reload development environment
+
 == API Reference
 
 === Overview
@@ -708,6 +708,11 @@ data: [DONE]
 
 === Error Responses
 
+[WARNING]
+====
+All API errors return appropriate HTTP status codes and structured error messages for easy debugging.
+====
+
 [source,json]
 ----
 {
@@ -725,11 +730,17 @@ Currently no rate limiting is implemented. In production, implement appropriate 
 
 === Best Practices
 
+[NOTE]
+====
+Following these practices ensures optimal performance and reliability:
+====
+
 1. **Model Selection**: Use the `/api/models` endpoint to discover available models before making requests
 2. **Context Limits**: Check model capabilities with `/api/show` to understand context window sizes
 3. **Streaming**: Use streaming for better user experience with long responses
 4. **Error Handling**: Implement proper error handling for all API calls
 5. **Monitoring**: Use the dashboard metrics endpoints to monitor system health
+
 == Deployment
 
 === Overview
@@ -981,61 +992,12 @@ docker-compose down
 .High Availability Architecture
 image::images/ha-architecture.png[HA Architecture,800,600]
 
-=== HAProxy Configuration
-
-[source,conf]
-----
-global
-    maxconn 4096
-    log stdout local0
-
-defaults
-    mode http
-    timeout connect 5s
-    timeout client 30s
-    timeout server 30s
-    option httplog
-
-frontend llm_frontend
-    bind *:80
-    default_backend llm_backend
-
-backend llm_backend
-    balance roundrobin
-    option httpchk GET /health
-    
-    server llm1 192.168.1.10:11435 check
-    server llm2 192.168.1.11:11435 check
-----
-
-=== Load Balancer Setup
-
-**Features:**
-* Round-robin load balancing with health checks
-* Automatic failover for failed instances
-* Session persistence for streaming requests
-* Real-time monitoring and metrics
-
-**Health Check Configuration:**
-* Endpoint: `/health`
-* Interval: 30 seconds
-* Timeout: 5 seconds
-* Failure threshold: 3 consecutive failures
 
 === Security Considerations
 
 === Network Security
 
-1. **Firewall Rules**:
-[source,bash]
-----
-# Allow only necessary ports
-sudo ufw allow 22/tcp     # SSH
-sudo ufw allow 11435/tcp  # LLM Service
-sudo ufw enable
-----
-
-2. **SSL/TLS Configuration**:
+**SSL/TLS Configuration**:
 [source,nginx]
 ----
 server {
@@ -1074,29 +1036,23 @@ def require_api_key(f):
 
 === Monitoring Setup
 
-=== Prometheus Configuration
+[NOTE]
+====
+The service includes comprehensive built-in monitoring dashboards:
 
-[source,yaml]
-----
-# prometheus.yml
-global:
-  scrape_interval: 15s
+* Real-time GPU monitoring with thermal management
+* API endpoint health tracking
+* Model performance analytics
+* Hardware optimization insights
+* Production monitoring with alerting
+====
 
-scrape_configs:
-  - job_name: 'llm-inference'
-    static_configs:
-      - targets: ['localhost:11435']
-    metrics_path: '/metrics'
-----
 
-=== Grafana Dashboard
-
-Import the provided dashboard JSON from `monitoring/grafana-dashboard.json` for:
-
-* GPU utilization and temperature
-* Request latency and throughput
-* Model performance metrics
-* System resource usage
+[NOTE]
+====
+The service includes built-in web dashboards with all monitoring capabilities.
+External monitoring integration (Prometheus/Grafana) is optional for advanced use cases.
+====
 
 === Backup and Recovery
 
@@ -1132,6 +1088,11 @@ echo "Backup completed: $BACKUP_DIR/*_$DATE"
 === Troubleshooting
 
 === Common Issues
+
+[CAUTION]
+====
+Most issues can be resolved by checking logs and verifying configuration. Always check logs first!
+====
 
 [cols="2,3,3", options="header"]
 |===
@@ -1208,7 +1169,7 @@ max_concurrent_requests: 10  # Adjust based on GPU memory
 - [ ] Dependencies installed and tested
 - [ ] Configuration file reviewed and customized
 - [ ] SSL certificates configured (if applicable)
-- [ ] Firewall rules implemented
+- [ ] Network security configured
 - [ ] Backup strategy defined
 
 === Post-Deployment
@@ -1664,9 +1625,15 @@ Import `monitoring/grafana-dashboard.json` for pre-configured panels:
 * Implement log rotation to manage disk space
 * Use structured logging for better analysis
 * Regular log review for security and performance insights
+
 == Quick Start
 
 === Installation
+
+[IMPORTANT]
+====
+The service runs on port 11435 by default. Ensure this port is available before installation.
+====
 
 [source,bash]
 ----
@@ -1681,6 +1648,11 @@ open http://localhost:11435/dashboard
 ----
 
 === Test API
+
+[TIP]
+====
+Use `tinyllama:1.1b-chat` for quick testing - it's a small, fast model ideal for verifying your installation.
+====
 
 [source,bash]
 ----
@@ -1763,7 +1735,7 @@ image::images/llm-service-main-gpudetail.png[GPU Monitor,1200,800]
 image::images/llm-service-main-configset.png[Configuration Panel,1200,800]
 
 .Hardware Optimization Dashboard
-image::images/optimization-dashboard-screenshot.png[Optimization Dashboard,1200,800]
+image::images/llm-service-main-optimization.png[Optimization Dashboard,1200,800]
 
 **Key Features:**
 * Real-time GPU monitoring (4x Tesla M10)
