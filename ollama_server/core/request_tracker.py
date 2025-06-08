@@ -72,6 +72,14 @@ class RequestTracker:
                 for key, value in kwargs.items():
                     setattr(request_status, key, value)
                 request_status.last_update = time.time()
+                
+                # If request is now completed/error, move it to completed_requests deque
+                if request_status.status in ['completed', 'error']:
+                    # Add to completed requests deque (automatically removes oldest if full)
+                    self.completed_requests.append(request_status)
+                    # Remove from active requests after a short delay
+                    # Schedule removal in 3 seconds to allow UI to update
+                    threading.Timer(3.0, self._delayed_remove, args=[request_id]).start()
             else:
                 logger.warning(f"[{request_id}] Update attempt for non-existent request in tracker.")
     
@@ -87,6 +95,16 @@ class RequestTracker:
                 logger.info(f"[{request_id}] Removed from tracker.")
             else:
                 logger.debug(f"[{request_id}] Attempt to remove non-existent or already removed request.")
+    
+    def _delayed_remove(self, request_id: str) -> None:
+        """Remove completed request from active tracking after a delay."""
+        with self._lock:
+            if request_id in self.active_requests:
+                request_status = self.active_requests[request_id]
+                # Only remove if still in completed/error state
+                if request_status.status in ['completed', 'error']:
+                    del self.active_requests[request_id]
+                    logger.info(f"[{request_id}] Removed from tracker.")
     
     def get_all_requests(self) -> Dict[str, RequestStatus]:
         """Get all active requests."""
@@ -118,6 +136,10 @@ class RequestTracker:
                     to_remove.append(req_id)
             
             for req_id in to_remove:
+                # Move to completed_requests before removing if not already there
+                req_status = self.active_requests[req_id]
+                if req_status not in self.completed_requests:
+                    self.completed_requests.append(req_status)
                 del self.active_requests[req_id]
                 removed_count += 1
             

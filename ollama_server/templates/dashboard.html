@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - LLM Inference Service v3.0{% endblock %}
+{% block title %}Dashboard - LLM Inference Service v1.0{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -9,7 +9,7 @@
         <div class="sidebar">
             <h5 class="mb-3">
                 <i class="bi bi-speedometer2"></i>
-                System Overview v3.0 - Debug Mode
+                System Overview v1.0
             </h5>
             
             <!-- System Status -->
@@ -190,7 +190,7 @@
                     <div class="card-header">
                         <h5 class="card-title mb-0">
                             <i class="bi bi-list-task"></i>
-                            Active Requests
+                            Request History
                         </h5>
                     </div>
                     <div class="card-body">
@@ -212,7 +212,7 @@
                                 <tbody id="requests-table-body">
                                     <tr>
                                         <td colspan="9" class="text-center text-muted">
-                                            No active requests
+                                            No requests
                                         </td>
                                     </tr>
                                 </tbody>
@@ -583,7 +583,7 @@ function updateActiveRequests() {
     if (requests.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="text-center text-muted">No active requests</td>
+                <td colspan="9" class="text-center text-muted">No requests</td>
             </tr>
         `;
         return;
