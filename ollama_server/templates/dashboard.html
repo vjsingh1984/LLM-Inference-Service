@@ -534,8 +534,15 @@ function updateAPIEndpoints() {
 }
 
 function updateActiveRequests() {
+    console.log('=== updateActiveRequests called ===');
     const requests = dashboardData.requests || [];
+    console.log('Requests data:', requests);
     const tbody = document.getElementById('requests-table-body');
+    
+    if (!tbody) {
+        console.error('requests-table-body element not found!');
+        return;
+    }
     
     if (requests.length === 0) {
         tbody.innerHTML = `
@@ -561,6 +568,7 @@ function updateActiveRequests() {
         } else {
             const liveDuration = Math.round((Date.now() - startTime.getTime()) / 1000);
             durationDisplay = `${liveDuration}s`;
+            console.log(`Live duration for ${req.request_id}: ${liveDuration}s (${Math.round(liveDuration/60)}m)`);
         }
         
         // Format total throughput (prompt + generated)
@@ -604,7 +612,9 @@ function updateActiveRequests() {
         `;
     });
     
+    console.log('Setting requests table HTML, length:', html.length);
     tbody.innerHTML = html;
+    console.log('=== updateActiveRequests completed ===');
 }
 
 function updateCharts() {
