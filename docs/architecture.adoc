@@ -1,0 +1,281 @@
+= Architecture Documentation
+:toc:
+:toclevels: 3
+
+== System Architecture
+
+The LLM Inference Service follows a modular architecture with clear separation of concerns:
+
+=== Core Components
+
+[plantuml, architecture-overview, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam componentStyle rectangle
+skinparam defaultFontSize 12
+skinparam arrowThickness 2
+
+package "API Gateway Layer" #E8F5E9 {
+    component [Flask API Server] as API #4CAF50
+    component [Route Handlers] as Routes #66BB6A
+    component [Request Validation] as Validation #81C784
+}
+
+package "Request Processing" #E3F2FD {
+    component [Request Adapters] as Adapters #2196F3
+    component [Model Manager] as ModelMgr #42A5F5
+    component [Request Tracker] as Tracker #64B5F6
+}
+
+package "Inference Engine" #FFF3E0 {
+    component [LLAMA Executor] as Executor #FF9800
+    component [GPU Manager] as GPUMgr #FFA726
+    component [Response Processor] as Response #FFB74D
+}
+
+package "Monitoring & Analytics" #F3E5F5 {
+    component [GPU Monitor] as GPUMon #9C27B0
+    component [API Metrics] as Metrics #AB47BC
+    component [Production Monitor] as ProdMon #BA68C8
+}
+
+package "Utilities" #E0F2F1 {
+    component [Model Inspector] as Inspector #009688
+    component [Hardware Optimizer] as HWOpt #26A69A
+    component [Cost Calculator] as CostCalc #4DB6AC
+}
+
+database "Model Storage" as Storage #FFECB3 {
+    folder "GGUF Models" as Models
+    folder "Ollama Manifests" as Manifests
+}
+
+cloud "External Services" {
+    [Ollama CLI] as Ollama #607D8B
+    [NVIDIA Drivers] as NVIDIA #78909C
+}
+
+' Connections
+API --> Routes
+Routes --> Validation
+Validation --> Adapters
+
+Adapters --> ModelMgr
+Adapters --> Tracker
+Adapters --> Executor
+
+ModelMgr --> Storage
+ModelMgr --> Inspector
+Inspector --> Ollama
+
+Executor --> GPUMgr
+Executor --> Response
+GPUMgr --> NVIDIA
+
+Routes --> GPUMon
+Routes --> Metrics
+Routes --> ProdMon
+
+GPUMon --> GPUMgr
+Metrics --> Tracker
+ProdMon --> HWOpt
+
+HWOpt --> GPUMon
+HWOpt --> ModelMgr
+CostCalc --> HWOpt
+
+@enduml
+----
+
+=== Component Interactions
+
+[plantuml, component-interactions, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+participant "Client" as C #4CAF50
+participant "API Gateway" as API #2196F3
+participant "Request Adapter" as RA #42A5F5
+participant "Model Manager" as MM #FF9800
+participant "LLAMA Executor" as LE #FFA726
+participant "GPU Manager" as GM #9C27B0
+participant "Response Processor" as RP #AB47BC
+
+C -> API: POST /api/chat/completions
+activate API
+
+API -> RA: Parse request
+activate RA
+RA -> MM: Get model info
+activate MM
+MM -> MM: Check manifests
+MM --> RA: Model metadata
+deactivate MM
+
+RA -> LE: Create execution request
+deactivate RA
+activate LE
+
+LE -> GM: Allocate GPU resources
+activate GM
+GM -> GM: Check availability
+GM --> LE: GPU allocation
+deactivate GM
+
+LE -> LE: Execute inference
+note right: llama.cpp process
+
+LE -> RP: Process output
+activate RP
+RP -> RP: Format response
+RP --> LE: Formatted response
+deactivate RP
+
+LE --> API: Inference result
+deactivate LE
+
+API --> C: JSON response
+deactivate API
+
+@enduml
+----
+
+=== Data Flow Architecture
+
+[plantuml, data-flow, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+skinparam activityShape octagon
+
+start
+
+:Client Request;
+note right: OpenAI/Ollama/vLLM/HF format
+
+:API Gateway;
+partition "Request Processing" {
+    :Route Matching;
+    :Format Detection;
+    :Request Validation;
+    if (Valid Request?) then (yes)
+        :Adapter Selection;
+    else (no)
+        :Error Response;
+        stop
+    endif
+}
+
+partition "Model Management" {
+    :Model Discovery;
+    :Context Size Detection;
+    :Parameter Validation;
+    :Resource Allocation;
+}
+
+partition "Inference Execution" {
+    :GPU Selection;
+    :Tensor Distribution;
+    :LLAMA Process;
+    :Token Generation;
+}
+
+partition "Response Processing" {
+    :Output Formatting;
+    :Think Tag Handling;
+    :Streaming/Non-streaming;
+    :Metrics Recording;
+}
+
+:Client Response;
+note right: Format-specific response
+
+stop
+
+@enduml
+----
+
+=== Deployment Architecture
+
+[plantuml, deployment-architecture, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+skinparam nodeStyle rectangle
+
+node "Host Server" #E8F5E9 {
+    node "SystemD Service" #4CAF50 {
+        component [LLM Inference Service] as Service
+    }
+    
+    node "GPU Cluster" #E3F2FD {
+        component [GPU 0: Tesla M10] as GPU0 #2196F3
+        component [GPU 1: Tesla M10] as GPU1 #42A5F5
+        component [GPU 2: Tesla M10] as GPU2 #64B5F6
+        component [GPU 3: Tesla M10] as GPU3 #90CAF9
+    }
+    
+    node "Storage" #FFF3E0 {
+        database [Model Repository] as Models #FF9800
+        database [Logs & Metrics] as Logs #FFA726
+    }
+}
+
+node "Network" #F3E5F5 {
+    component [Load Balancer] as LB #9C27B0
+    component [Firewall] as FW #AB47BC
+}
+
+cloud "Clients" {
+    actor [Web Dashboard] as Web #4CAF50
+    actor [API Clients] as API #2196F3
+    actor [CLI Tools] as CLI #FF9800
+}
+
+' Connections
+Web --> FW
+API --> FW
+CLI --> FW
+
+FW --> LB
+LB --> Service
+
+Service --> GPU0
+Service --> GPU1
+Service --> GPU2
+Service --> GPU3
+
+Service --> Models
+Service --> Logs
+
+note right of GPU0
+  Tensor split: 0.25
+  VRAM: 8GB
+  Power: 225W
+end note
+
+@enduml
+----
+
+== Technical Design Patterns
+
+=== Adapter Pattern
+Used for multi-API compatibility, allowing seamless support for different AI service formats.
+
+=== Observer Pattern
+Implemented in monitoring systems for real-time metric collection and alerting.
+
+=== Strategy Pattern
+Applied in model selection and execution strategies based on workload characteristics.
+
+=== Factory Pattern
+Used for creating appropriate adapters and executors based on request types.

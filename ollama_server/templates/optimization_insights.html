@@ -1,0 +1,677 @@
+{% extends "base.html" %}
+
+{% block title %}Hardware Optimization Insights - LLM Inference Service{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Overall Optimization Score --><div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-speedometer2"></i>
+                    System Optimization Overview
+                    <button class="btn btn-outline-success btn-sm ms-2" onclick="refreshOptimizationData()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Analysis
+                    </button>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="metric-card text-center">
+                            <div class="metric-value" id="optimization-score">--</div>
+                            <div class="metric-label">Overall Optimization Score</div>
+                            <small class="text-white-50">0-100 scale based on hardware utilization</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">System Status</h5>
+                                <div id="system-status-indicators">
+                                    <div class="mb-2">
+                                        <span class="status-indicator status-healthy"></span>
+                                        <span id="cpu-status">CPU: Analyzing...</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="status-indicator status-healthy"></span>
+                                        <span id="memory-status">Memory: Analyzing...</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="status-indicator status-healthy"></span>
+                                        <span id="gpu-status">GPU: Analyzing...</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="status-indicator status-healthy"></span>
+                                        <span id="model-status">Models: Analyzing...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Quick Actions</h5>
+                                <button class="btn btn-primary btn-sm mb-2 w-100" onclick="optimizeConfiguration()">
+                                    <i class="bi bi-lightning"></i> Auto-Optimize
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm mb-2 w-100" onclick="exportOptimizationReport()">
+                                    <i class="bi bi-download"></i> Export Report
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="scheduleOptimization()">
+                                    <i class="bi bi-clock"></i> Schedule Check
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Optimization Recommendations --><div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightbulb"></i>
+                    Optimization Recommendations
+                    <span class="badge bg-primary ms-2" id="recommendations-count">0</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="optimization-recommendations">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Analyzing system...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Analyzing hardware configuration and generating recommendations...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Analysis Details --><div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up"></i>
+                    Detailed System Analysis
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- CPU Analysis --><div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-cpu"></i>
+                                    CPU Analysis
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="cpu-analysis-details">
+                                    <p class="text-muted">Loading CPU analysis...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Memory Analysis --><div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-memory"></i>
+                                    Memory Analysis
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="memory-analysis-details">
+                                    <p class="text-muted">Loading memory analysis...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- GPU Analysis --><div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-gpu-card"></i>
+                                    GPU Analysis
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="gpu-analysis-details">
+                                    <p class="text-muted">Loading GPU analysis...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Model Analysis --><div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-brain"></i>
+                                    Model Analysis
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="model-analysis-details">
+                                    <p class="text-muted">Loading model analysis...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Optimization History --><div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history"></i>
+                    Optimization History
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Optimization Score</th>
+                                <th>Key Changes</th>
+                                <th>Impact</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="optimization-history-table">
+                            <tr>
+                                <td>2025-06-07 20:08:00</td>
+                                <td><span class="badge bg-success">85.2</span></td>
+                                <td>Current system configuration</td>
+                                <td>Baseline performance measurement</td>
+                                <td>
+                                    <button class="btn btn-outline-info btn-sm" onclick="viewOptimizationDetails('current')">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Optimization Details Modal --><div class="modal fade" id="optimizationDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Optimization Analysis Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>System Configuration</h6>
+                        <pre id="optimization-config-details" class="bg-light p-3 rounded"></pre>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Detailed Recommendations</h6>
+                        <div id="optimization-recommendations-details"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="applyOptimizations()">Apply Recommendations</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Optimization insights JavaScript
+let optimizationData = {};
+let optimizationInterval;
+
+// Initialize optimization insights
+document.addEventListener('DOMContentLoaded', function() {
+    startOptimizationMonitoring();
+});
+
+async function startOptimizationMonitoring() {
+    async function updateOptimizationData() {
+        try {
+            const response = await fetch('/api/metrics/optimization');
+            if (!response.ok) throw new Error('Failed to fetch optimization data');
+            
+            optimizationData = await response.json();
+            updateOptimizationDisplay();
+        } catch (error) {
+            console.error('Error fetching optimization data:', error);
+            showOptimizationError(error.message);
+        }
+    }
+    
+    // Update immediately and then every 30 seconds
+    updateOptimizationData();
+    optimizationInterval = setInterval(updateOptimizationData, 30000);
+}
+
+function updateOptimizationDisplay() {
+    if (!optimizationData || optimizationData.error) {
+        showOptimizationError(optimizationData?.error || 'Unknown error');
+        return;
+    }
+    
+    // Update overall score
+    updateOptimizationScore();
+    
+    // Update system status indicators
+    updateSystemStatusIndicators();
+    
+    // Update recommendations
+    updateOptimizationRecommendations();
+    
+    // Update detailed analysis
+    updateDetailedAnalysis();
+    
+    // Add to history
+    addOptimizationToHistory();
+}
+
+function updateOptimizationScore() {
+    const scoreElement = document.getElementById('optimization-score');
+    const score = optimizationData.overall_score || 0;
+    
+    scoreElement.textContent = score.toFixed(1);
+    
+    // Update score card color based on score
+    const card = scoreElement.closest('.metric-card');
+    card.className = 'metric-card text-center';
+    
+    if (score >= 80) {
+        card.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+    } else if (score >= 60) {
+        card.style.background = 'linear-gradient(135deg, #ffc107 0%, #fd7e14 100%)';
+    } else {
+        card.style.background = 'linear-gradient(135deg, #dc3545 0%, #e83e8c 100%)';
+    }
+}
+
+function updateSystemStatusIndicators() {
+    const cpuAnalysis = optimizationData.cpu_analysis || {};
+    const memoryAnalysis = optimizationData.memory_analysis || {};
+    const gpuAnalysis = optimizationData.gpu_analysis || {};
+    const modelAnalysis = optimizationData.model_analysis || {};
+    
+    // CPU Status
+    updateStatusIndicator('cpu-status', 'CPU', cpuAnalysis);
+    
+    // Memory Status
+    updateStatusIndicator('memory-status', 'Memory', memoryAnalysis);
+    
+    // GPU Status
+    updateStatusIndicator('gpu-status', 'GPU', gpuAnalysis);
+    
+    // Model Status
+    updateStatusIndicator('model-status', 'Models', modelAnalysis);
+}
+
+function updateStatusIndicator(elementId, prefix, analysis) {
+    const element = document.getElementById(elementId);
+    const indicator = element.parentElement.querySelector('.status-indicator');
+    
+    if (analysis.error) {
+        element.textContent = `${prefix}: Error`;
+        indicator.className = 'status-indicator status-error';
+    } else {
+        let status = 'Healthy';
+        let statusClass = 'status-healthy';
+        
+        // Determine status based on analysis data
+        if (analysis.current_usage_percent > 85 || analysis.memory_pressure === 'high' || 
+            analysis.thermal_status === 'critical' || analysis.vram_utilization_percent > 90) {
+            status = 'Critical';
+            statusClass = 'status-error';
+        } else if (analysis.current_usage_percent > 70 || analysis.memory_pressure === 'medium' || 
+                   analysis.thermal_status === 'warning' || analysis.vram_utilization_percent > 80) {
+            status = 'Warning';
+            statusClass = 'status-warning';
+        }
+        
+        element.textContent = `${prefix}: ${status}`;
+        indicator.className = `status-indicator ${statusClass}`;
+    }
+}
+
+function updateOptimizationRecommendations() {
+    const container = document.getElementById('optimization-recommendations');
+    const countBadge = document.getElementById('recommendations-count');
+    const recommendations = optimizationData.recommendations || [];
+    
+    countBadge.textContent = recommendations.length;
+    
+    if (recommendations.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 text-success">System Optimally Configured</h5>
+                <p class="text-muted">No optimization recommendations at this time.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    recommendations.forEach((rec, index) => {
+        const priorityClass = rec.priority === 'high' ? 'danger' : 
+                             rec.priority === 'medium' ? 'warning' : 'info';
+        const difficultyIcon = rec.implementation_difficulty === 'easy' ? 'check-circle' :
+                              rec.implementation_difficulty === 'moderate' ? 'clock' : 'tools';
+        
+        html += `
+            <div class="card mb-3 border-left-${priorityClass}">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-${priorityClass} me-2">${rec.priority.toUpperCase()}</span>
+                                <span class="badge bg-secondary me-2">${rec.category}</span>
+                                <h6 class="mb-0">${rec.title}</h6>
+                            </div>
+                            <p class="text-muted mb-2">${rec.description}</p>
+                            <p class="mb-1"><strong>Action:</strong> ${rec.action}</p>
+                            <p class="mb-0"><strong>Impact:</strong> ${rec.impact}</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                <i class="bi bi-${difficultyIcon} text-muted"></i>
+                                <small class="text-muted">${rec.implementation_difficulty}</small>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-success"><strong>${rec.estimated_improvement}</strong></small>
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm" onclick="implementRecommendation(${index})">
+                                <i class="bi bi-gear"></i> Implement
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="dismissRecommendation(${index})">
+                                <i class="bi bi-x"></i> Dismiss
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function updateDetailedAnalysis() {
+    // CPU Analysis
+    updateAnalysisSection('cpu-analysis-details', optimizationData.cpu_analysis, {
+        logical_cores: 'Logical Cores',
+        physical_cores: 'Physical Cores',
+        current_usage_percent: 'Current Usage %',
+        brand: 'Processor',
+        performance_rating: 'Performance Rating'
+    });
+    
+    // Memory Analysis
+    updateAnalysisSection('memory-analysis-details', optimizationData.memory_analysis, {
+        total_gb: 'Total Memory (GB)',
+        available_gb: 'Available (GB)',
+        usage_percent: 'Usage %',
+        memory_pressure: 'Memory Pressure',
+        adequacy_for_llm: 'LLM Adequacy'
+    });
+    
+    // GPU Analysis
+    updateAnalysisSection('gpu-analysis-details', optimizationData.gpu_analysis, {
+        gpu_count: 'GPU Count',
+        total_vram_gb: 'Total VRAM (GB)',
+        vram_utilization_percent: 'VRAM Usage %',
+        average_gpu_utilization: 'Avg GPU Usage %',
+        thermal_status: 'Thermal Status',
+        current_tensor_split: 'Tensor Split'
+    });
+    
+    // Model Analysis
+    updateAnalysisSection('model-analysis-details', optimizationData.model_analysis, {
+        total_models: 'Total Models',
+        average_context_size: 'Avg Context Size',
+        max_context_size: 'Max Context Size',
+        diversity_score: 'Diversity Score',
+        optimization_potential: 'Optimization Potential'
+    });
+}
+
+function updateAnalysisSection(elementId, data, fieldMap) {
+    const container = document.getElementById(elementId);
+    
+    if (!data || data.error) {
+        container.innerHTML = `<p class="text-danger">Error: ${data?.error || 'Analysis failed'}</p>`;
+        return;
+    }
+    
+    let html = '<div class="row">';
+    
+    Object.entries(fieldMap).forEach(([key, label]) => {
+        const value = data[key];
+        if (value !== undefined && value !== null) {
+            const formattedValue = typeof value === 'number' ? 
+                (value % 1 === 0 ? value.toString() : value.toFixed(2)) : 
+                value.toString();
+            
+            html += `
+                <div class="col-md-6 mb-2">
+                    <small class="text-muted">${label}</small><br>
+                    <strong>${formattedValue}</strong>
+                </div>
+            `;
+        }
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function addOptimizationToHistory() {
+    // Add current analysis to history table (in real implementation, this would be persisted)
+    const table = document.getElementById('optimization-history-table');
+    const timestamp = new Date().toLocaleString();
+    const score = optimizationData.overall_score || 0;
+    
+    // Only add if this is a new analysis (avoid duplicates during refresh)
+    const existingRows = table.querySelectorAll('tr');
+    if (existingRows.length > 0) {
+        const lastTimestamp = existingRows[0].querySelector('td').textContent;
+        if (Math.abs(new Date(timestamp) - new Date(lastTimestamp)) < 60000) {
+            return; // Less than 1 minute difference, skip
+        }
+    }
+    
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${timestamp}</td>
+        <td><span class="badge bg-${score >= 80 ? 'success' : score >= 60 ? 'warning' : 'danger'}">${score.toFixed(1)}</span></td>
+        <td>Automated analysis update</td>
+        <td>${optimizationData.recommendations?.length || 0} recommendations</td>
+        <td>
+            <button class="btn btn-outline-info btn-sm" onclick="viewOptimizationDetails('${timestamp}')">
+                <i class="bi bi-eye"></i> View
+            </button>
+        </td>
+    `;
+    
+    table.insertBefore(row, table.firstChild);
+    
+    // Keep only last 10 entries
+    while (table.children.length > 10) {
+        table.removeChild(table.lastChild);
+    }
+}
+
+// Action handlers
+async function refreshOptimizationData() {
+    document.getElementById('optimization-score').textContent = '--';
+    const recommendations = document.getElementById('optimization-recommendations');
+    recommendations.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Refreshing optimization analysis...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/api/metrics/optimization');
+        if (!response.ok) throw new Error('Failed to refresh optimization data');
+        
+        optimizationData = await response.json();
+        updateOptimizationDisplay();
+        DashboardUtils.showToast('Optimization analysis refreshed', 'success');
+    } catch (error) {
+        console.error('Error refreshing optimization data:', error);
+        DashboardUtils.showToast('Failed to refresh analysis', 'error');
+    }
+}
+
+function optimizeConfiguration() {
+    DashboardUtils.showToast('Auto-optimization feature coming soon', 'info');
+}
+
+function exportOptimizationReport() {
+    const report = {
+        timestamp: new Date().toISOString(),
+        overall_score: optimizationData.overall_score,
+        system_analysis: optimizationData,
+        recommendations: optimizationData.recommendations
+    };
+    
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `optimization-report-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    DashboardUtils.showToast('Optimization report downloaded', 'success');
+}
+
+function scheduleOptimization() {
+    DashboardUtils.showToast('Optimization scheduling feature coming soon', 'info');
+}
+
+function implementRecommendation(index) {
+    const rec = optimizationData.recommendations[index];
+    if (confirm(`Implement recommendation: "${rec.title}"?\n\nThis will ${rec.action.toLowerCase()}.`)) {
+        DashboardUtils.showToast(`Implementing: ${rec.title}`, 'info');
+        // TODO: Implement actual recommendation application
+    }
+}
+
+function dismissRecommendation(index) {
+    const rec = optimizationData.recommendations[index];
+    if (confirm(`Dismiss recommendation: "${rec.title}"?`)) {
+        optimizationData.recommendations.splice(index, 1);
+        updateOptimizationRecommendations();
+        DashboardUtils.showToast('Recommendation dismissed', 'success');
+    }
+}
+
+function viewOptimizationDetails(timestamp) {
+    const modal = new bootstrap.Modal(document.getElementById('optimizationDetailsModal'));
+    const configDetails = document.getElementById('optimization-config-details');
+    const recDetails = document.getElementById('optimization-recommendations-details');
+    
+    // Show optimization details
+    configDetails.textContent = JSON.stringify({
+        timestamp: timestamp,
+        system_analysis: optimizationData
+    }, null, 2);
+    
+    // Show recommendations
+    const recommendations = optimizationData.recommendations || [];
+    let recHtml = '';
+    recommendations.forEach(rec => {
+        recHtml += `
+            <div class="card mb-2">
+                <div class="card-body p-3">
+                    <h6 class="card-title">${rec.title}</h6>
+                    <p class="card-text small">${rec.description}</p>
+                    <small class="text-muted">${rec.estimated_improvement}</small>
+                </div>
+            </div>
+        `;
+    });
+    
+    recDetails.innerHTML = recHtml || '<p class="text-muted">No recommendations available.</p>';
+    modal.show();
+}
+
+function applyOptimizations() {
+    DashboardUtils.showToast('Bulk optimization application coming soon', 'info');
+}
+
+function showOptimizationError(message) {
+    const container = document.getElementById('optimization-recommendations');
+    container.innerHTML = `
+        <div class="text-center py-4">
+            <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+            <h5 class="mt-3 text-warning">Analysis Error</h5>
+            <p class="text-muted">${message}</p>
+            <button class="btn btn-outline-primary" onclick="refreshOptimizationData()">
+                <i class="bi bi-arrow-clockwise"></i> Retry Analysis
+            </button>
+        </div>
+    `;
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (optimizationInterval) {
+        clearInterval(optimizationInterval);
+    }
+});
+</script>
+
+<style>
+.border-left-danger {
+    border-left: 4px solid #dc3545 !important;
+}
+
+.border-left-warning {
+    border-left: 4px solid #ffc107 !important;
+}
+
+.border-left-info {
+    border-left: 4px solid #17a2b8 !important;
+}
+
+#optimization-config-details {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.metric-card {
+    transition: background 0.3s ease;
+}
+</style>
+{% endblock %}

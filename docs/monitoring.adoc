@@ -1,0 +1,629 @@
+= Monitoring & Operations Guide
+:toc:
+:toclevels: 3
+
+== Overview
+
+The LLM Inference Service provides comprehensive monitoring capabilities for production deployments.
+
+== Monitoring Architecture
+
+[plantuml, monitoring-architecture, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+package "LLM Inference Service" #E8F5E9 {
+    component [API Server] as API #4CAF50
+    component [GPU Monitor] as GPUMon #66BB6A
+    component [API Metrics] as APIMet #81C784
+    component [Production Monitor] as ProdMon #A5D6A7
+}
+
+package "Metrics Collection" #E3F2FD {
+    component [Prometheus Exporter] as Prom #2196F3
+    component [Log Aggregator] as Logs #42A5F5
+    component [Alert Manager] as Alert #64B5F6
+}
+
+package "Visualization" #FFF3E0 {
+    component [Web Dashboard] as Dash #FF9800
+    component [Grafana] as Graf #FFA726
+    component [Alert UI] as AlertUI #FFB74D
+}
+
+package "Storage" #F3E5F5 {
+    database [Metrics DB] as MDB #9C27B0
+    database [Log Storage] as LogDB #AB47BC
+}
+
+API --> GPUMon : GPU stats
+API --> APIMet : Request metrics
+API --> ProdMon : System health
+
+GPUMon --> Prom
+APIMet --> Prom
+ProdMon --> Prom
+
+Prom --> MDB : Store metrics
+Logs --> LogDB : Store logs
+
+MDB --> Graf : Query
+MDB --> Dash : Real-time
+LogDB --> Dash : Logs
+
+ProdMon --> Alert : Threshold violations
+Alert --> AlertUI : Notifications
+
+@enduml
+----
+
+== Web Dashboard
+
+=== Dashboard Overview
+
+The service includes a comprehensive web dashboard accessible at `http://localhost:11436/dashboard`.
+
+[plantuml, dashboard-pages, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+skinparam rectangleBackgroundColor #FFFFFF
+
+rectangle "Dashboard Pages" #E8F5E9 {
+    rectangle "/dashboard" as Main #4CAF50 {
+        (System Overview)
+        (Active Requests)
+        (Quick Stats)
+    }
+    
+    rectangle "/dashboard/gpu" as GPU #2196F3 {
+        (Temperature Monitoring)
+        (Utilization Tracking)
+        (Memory Usage)
+        (Power Consumption)
+    }
+    
+    rectangle "/dashboard/models" as Models #FF9800 {
+        (Model Inventory)
+        (Performance Metrics)
+        (Usage Analytics)
+    }
+    
+    rectangle "/dashboard/apis" as APIs #9C27B0 {
+        (Endpoint Health)
+        (Response Times)
+        (Error Rates)
+    }
+    
+    rectangle "/dashboard/optimization" as Opt #4DB6AC {
+        (System Score)
+        (Recommendations)
+        (Resource Analysis)
+    }
+    
+    rectangle "/dashboard/production" as Prod #F44336 {
+        (Health Score)
+        (Alert Management)
+        (Performance Trends)
+    }
+}
+
+Main --> GPU : Navigate
+Main --> Models : Navigate
+Main --> APIs : Navigate
+Main --> Opt : Navigate
+Main --> Prod : Navigate
+
+note bottom
+  15-second auto-refresh
+  Real-time data updates
+  Responsive design
+end note
+
+@enduml
+----
+
+=== Key Metrics Tracked
+
+[cols="2,3,2", options="header"]
+|===
+|Metric |Description |Update Frequency
+
+|GPU Temperature
+|Per-GPU temperature in Celsius
+|Real-time (1s)
+
+|GPU Utilization
+|Percentage of GPU compute usage
+|Real-time (1s)
+
+|Memory Usage
+|VRAM usage per GPU in MB
+|Real-time (1s)
+
+|Request Latency
+|End-to-end request processing time
+|Per request
+
+|Token Generation Rate
+|Tokens per second during inference
+|Per request
+
+|API Success Rate
+|Percentage of successful requests
+|1 minute window
+
+|System Health Score
+|0-100 composite health indicator
+|1 minute
+
+|Active Alerts
+|Current unresolved system alerts
+|Real-time
+|===
+
+== Production Monitoring
+
+=== Health Score Calculation
+
+[plantuml, health-score, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+start
+
+:Collect Metrics;
+note right
+  CPU, Memory, GPU,
+  Error Rate, Response Time
+end note
+
+partition "Score Components" {
+    :CPU Score = 100 - CPU%;
+    :Memory Score = 100 - Memory%;
+    :GPU Score = 100 - (Temp/Max * 100);
+    :Error Score = 100 - (ErrorRate * 10);
+    :Response Score = 100 - ((RT - 5000) / 250);
+}
+
+:Calculate Average;
+note right
+  Weighted average of
+  all component scores
+end note
+
+if (Active Alerts?) then (yes)
+    :Reduce Score by (Alerts * 20);
+else (no)
+endif
+
+:Final Health Score;
+note right
+  0-100 scale
+  >80 = Healthy
+  60-80 = Warning
+  <60 = Critical
+end note
+
+stop
+
+@enduml
+----
+
+=== Alert Configuration
+
+Configure alerts in the Production Monitor dashboard:
+
+[source,yaml]
+----
+# Alert thresholds
+alerts:
+  cpu_usage:
+    warning: 80    # percentage
+    critical: 95
+    duration: 300  # seconds
+    
+  memory_usage:
+    warning: 85
+    critical: 95
+    duration: 300
+    
+  gpu_temperature:
+    warning: 80    # Celsius
+    critical: 85
+    duration: 180
+    
+  error_rate:
+    warning: 5     # percentage
+    critical: 15
+    duration: 120
+    
+  response_time:
+    warning: 10000 # milliseconds
+    critical: 30000
+    duration: 180
+----
+
+=== Alert Types
+
+[plantuml, alert-flow, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+start
+
+:Metric Collection;
+
+if (Threshold Exceeded?) then (yes)
+    :Start Duration Timer;
+    
+    if (Duration Exceeded?) then (yes)
+        if (Critical Threshold?) then (yes)
+            #FF5252:Create Critical Alert;
+        else (no)
+            #FFC107:Create Warning Alert;
+        endif
+        
+        :Send Notifications;
+        note right
+          - Dashboard UI
+          - Log entry
+          - Email (if configured)
+          - Webhook (if configured)
+        end note
+        
+    else (no)
+        :Continue Monitoring;
+    endif
+else (no)
+    if (Active Alert?) then (yes)
+        #4CAF50:Resolve Alert;
+        :Log Resolution;
+    else (no)
+    endif
+endif
+
+stop
+
+@enduml
+----
+
+== GPU Monitoring
+
+=== Metrics Collected
+
+[source,json]
+----
+{
+  "timestamp": "2025-06-07T20:30:00Z",
+  "gpus": [
+    {
+      "index": 0,
+      "name": "Tesla M10",
+      "temperature": 45,
+      "utilization_percent": 35.5,
+      "memory_used": 2280,
+      "memory_total": 8192,
+      "memory_percent": 27.8,
+      "power_draw": 30,
+      "power_limit": 225,
+      "fan_speed": 40
+    }
+  ],
+  "total_memory_used": 9120,
+  "total_memory_available": 32768,
+  "average_temperature": 48.5,
+  "average_utilization": 38.8,
+  "thermal_status": "good"
+}
+----
+
+=== Thermal Management
+
+[cols="2,2,3", options="header"]
+|===
+|Temperature Range |Status |Action
+
+|< 70°C
+|Good
+|Normal operation
+
+|70-80°C
+|Warning
+|Monitor closely, check cooling
+
+|80-85°C
+|Critical
+|Reduce workload, check fans
+
+|> 85°C
+|Emergency
+|Throttle or shutdown
+|===
+
+== API Monitoring
+
+=== Endpoint Metrics
+
+Track performance for each API endpoint:
+
+[source,json]
+----
+{
+  "endpoints": [
+    {
+      "endpoint": "OpenAI API",
+      "path": "/api/chat/completions",
+      "total_requests": 1527,
+      "successful_requests": 1520,
+      "failed_requests": 7,
+      "average_response_time": 245.3,
+      "success_rate": 99.5,
+      "last_request_time": "2025-06-07T20:29:45Z",
+      "status": "healthy"
+    }
+  ],
+  "timestamp": "2025-06-07T20:30:00Z",
+  "overallHealth": "healthy"
+}
+----
+
+=== Performance Tracking
+
+[plantuml, performance-tracking, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+participant "Client" as C #4CAF50
+participant "API Gateway" as API #2196F3
+participant "Metrics Collector" as MC #FF9800
+participant "Dashboard" as D #9C27B0
+
+C -> API: Request
+activate API
+
+API -> MC: Start timer
+activate MC
+MC --> API: Request ID
+deactivate MC
+
+API -> API: Process request
+
+API -> MC: End timer
+activate MC
+MC -> MC: Calculate metrics
+note right
+  - Response time
+  - Success/failure
+  - Token count
+  - Model used
+end note
+
+MC -> D: Update dashboard
+deactivate MC
+
+API -> C: Response
+deactivate API
+
+@enduml
+----
+
+== Log Management
+
+=== Log Structure
+
+[source,json]
+----
+{
+  "timestamp": "2025-06-07T20:30:00.123Z",
+  "level": "INFO",
+  "logger": "ollama_server.api.handlers",
+  "request_id": "7b4fa8e5-e2a9-4410-b43c-d071c8323fe1",
+  "message": "Handling non-streaming request",
+  "extra": {
+    "api": "openai",
+    "model": "phi4:latest",
+    "endpoint": "/api/chat/completions",
+    "remote_addr": "192.168.1.100"
+  }
+}
+----
+
+=== Log Levels
+
+[cols="1,3,2", options="header"]
+|===
+|Level |Usage |Example
+
+|ERROR
+|System errors, failures
+|Model loading failed
+
+|WARNING
+|Performance issues, alerts
+|High GPU temperature
+
+|INFO
+|Normal operations
+|Request completed
+
+|DEBUG
+|Detailed troubleshooting
+|Token generation details
+|===
+
+=== Log Rotation
+
+Configure log rotation in `/etc/logrotate.d/llm-inference`:
+
+[source,conf]
+----
+/opt/llm/inference-service/logs/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 llm llm
+    sharedscripts
+    postrotate
+        systemctl reload llm-inference
+    endscript
+}
+----
+
+== Performance Optimization
+
+=== Monitoring-Based Optimization
+
+[plantuml, optimization-flow, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+start
+
+:Collect Performance Metrics;
+
+if (GPU Utilization < 50%?) then (yes)
+    #FFC107:Increase Batch Size;
+else if (Memory Usage > 90%?) then (yes)
+    #FF5252:Reduce Context Size;
+else if (Response Time > Target?) then (yes)
+    if (GPU Available?) then (yes)
+        #2196F3:Increase GPU Layers;
+    else (no)
+        #FF9800:Add More GPUs;
+    endif
+else (no)
+    #4CAF50:Optimal Performance;
+endif
+
+:Apply Configuration;
+:Monitor Results;
+
+stop
+
+@enduml
+----
+
+=== Key Performance Indicators
+
+1. **Throughput**: Tokens per second
+2. **Latency**: 95th percentile response time
+3. **Efficiency**: GPU utilization percentage
+4. **Reliability**: Success rate percentage
+5. **Scalability**: Concurrent request capacity
+
+== Alerting Integration
+
+=== Webhook Configuration
+
+[source,python]
+----
+# config/alerting.yaml
+alerting:
+  webhooks:
+    - url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+      events: ["critical", "warning"]
+      
+    - url: "https://api.pagerduty.com/incidents"
+      events: ["critical"]
+      headers:
+        Authorization: "Token token=YOUR_TOKEN"
+----
+
+=== Email Alerts
+
+[source,yaml]
+----
+email:
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  use_tls: true
+  username: "alerts@example.com"
+  recipients:
+    - "ops-team@example.com"
+    - "on-call@example.com"
+----
+
+== Grafana Integration
+
+=== Prometheus Metrics Export
+
+The service exposes Prometheus-compatible metrics at `/metrics`:
+
+[source,prometheus]
+----
+# HELP llm_request_duration_seconds Request duration
+# TYPE llm_request_duration_seconds histogram
+llm_request_duration_seconds_bucket{api="openai",model="phi4",le="0.1"} 245
+llm_request_duration_seconds_bucket{api="openai",model="phi4",le="0.5"} 1203
+
+# HELP llm_gpu_temperature_celsius GPU temperature
+# TYPE llm_gpu_temperature_celsius gauge
+llm_gpu_temperature_celsius{gpu="0",name="Tesla M10"} 45
+
+# HELP llm_active_requests Number of active requests
+# TYPE llm_active_requests gauge
+llm_active_requests 3
+----
+
+=== Sample Grafana Dashboard
+
+Import `monitoring/grafana-dashboard.json` for pre-configured panels:
+
+* Request rate and latency
+* GPU utilization heatmap
+* Model performance comparison
+* System resource usage
+* Alert history
+
+== Troubleshooting with Monitoring
+
+=== Performance Issues
+
+1. Check GPU utilization in dashboard
+2. Review response time trends
+3. Analyze error logs
+4. Verify resource allocation
+
+=== Common Patterns
+
+[cols="2,3,3", options="header"]
+|===
+|Pattern |Likely Cause |Investigation
+
+|Increasing latency
+|Memory pressure, thermal throttling
+|Check GPU temperature and VRAM usage
+
+|Error rate spikes
+|Model issues, OOM errors
+|Review error logs and GPU memory
+
+|Low GPU utilization
+|CPU bottleneck, small batch size
+|Increase batch size, check CPU usage
+
+|Intermittent failures
+|Resource contention, driver issues
+|Check system logs and dmesg
+|===

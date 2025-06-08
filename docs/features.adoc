@@ -1,0 +1,306 @@
+= Features Documentation
+:toc:
+:toclevels: 3
+
+== Core Features
+
+=== Multi-API Compatibility
+
+The service provides comprehensive API compatibility with major LLM providers:
+
+[plantuml, api-compatibility, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam packageStyle rectangle
+skinparam defaultFontSize 12
+
+package "LLM Inference Service" #E8F5E9 {
+    component [Unified API Gateway] as Gateway #4CAF50
+    
+    package "API Adapters" #E3F2FD {
+        component [OpenAI Adapter] as OpenAI #2196F3
+        component [Ollama Adapter] as Ollama #42A5F5
+        component [vLLM Adapter] as vLLM #64B5F6
+        component [HuggingFace Adapter] as HF #90CAF9
+    }
+}
+
+actor "OpenAI Client" as OC #4CAF50
+actor "Ollama Client" as OLC #2196F3
+actor "vLLM Client" as VC #FF9800
+actor "HuggingFace Client" as HC #9C27B0
+
+OC --> Gateway : /api/chat/completions
+OLC --> Gateway : /api/generate
+VC --> Gateway : /v1/completions
+HC --> Gateway : /generate
+
+Gateway --> OpenAI
+Gateway --> Ollama
+Gateway --> vLLM
+Gateway --> HF
+
+note bottom of Gateway
+  Automatic format detection
+  Request transformation
+  Response formatting
+end note
+
+@enduml
+----
+
+=== Dynamic Model Management
+
+[plantuml, model-management, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+package "Model Management System" #E3F2FD {
+    component [Model Manager] as MM #2196F3
+    component [Model Inspector] as MI #42A5F5
+    component [Context Detector] as CD #64B5F6
+    
+    database "Model Storage" #FFF3E0 {
+        folder [GGUF Files] as GGUF #FF9800
+        folder [Manifests] as MF #FFA726
+    }
+}
+
+cloud "Ollama CLI" as CLI #9C27B0
+
+MM --> GGUF : Scan models
+MM --> MF : Read metadata
+MM --> MI : Inspect capabilities
+
+MI --> CLI : Query model info
+CLI --> MI : Actual parameters
+
+MI --> CD : Verify context
+CD --> MM : Update metadata
+
+note right of CD
+  Detects up to 131K+ tokens
+  Bypasses artificial limits
+  Family-based defaults
+end note
+
+@enduml
+----
+
+=== GPU Management & Optimization
+
+[plantuml, gpu-management, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+package "GPU Management" #E8F5E9 {
+    component [GPU Monitor] as GM #4CAF50
+    component [Tensor Splitter] as TS #66BB6A
+    component [Weight Manager] as WM #81C784
+    
+    package "4x Tesla M10 GPUs" #E3F2FD {
+        component [GPU 0\n8GB VRAM] as G0 #2196F3
+        component [GPU 1\n8GB VRAM] as G1 #42A5F5
+        component [GPU 2\n8GB VRAM] as G2 #64B5F6
+        component [GPU 3\n8GB VRAM] as G3 #90CAF9
+    }
+}
+
+GM --> G0 : Monitor
+GM --> G1 : Monitor
+GM --> G2 : Monitor
+GM --> G3 : Monitor
+
+TS --> G0 : 25% load
+TS --> G1 : 25% load
+TS --> G2 : 25% load
+TS --> G3 : 25% load
+
+WM --> TS : Configure split
+
+note bottom of GM
+  Real-time monitoring:
+  - Temperature: 39-72°C
+  - Utilization: 38.8% avg
+  - Power: 25-34W per GPU
+end note
+
+@enduml
+----
+
+== Advanced Features
+
+=== Think Tag Preservation
+
+Special handling for reasoning models that use internal thought processes:
+
+[plantuml, think-tag-flow, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+start
+
+:Model generates response;
+note right: phi4-reasoning, deepseek-r1
+
+if (Contains <think> tags?) then (yes)
+    if (API Format?) then (Ollama)
+        :Preserve tags in response;
+        note right: Matches official behavior
+    else (OpenAI/Others)
+        :Extract think content;
+        :Strip tags from response;
+        :Store for analysis;
+    endif
+else (no)
+    :Standard response;
+endif
+
+:Return formatted response;
+
+stop
+
+@enduml
+----
+
+=== Real-time Monitoring Dashboard
+
+[plantuml, monitoring-features, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+skinparam rectangleBackgroundColor #FFFFFF
+
+rectangle "Web Dashboard Features" #E8F5E9 {
+    rectangle "Main Dashboard" #4CAF50 {
+        (System Overview)
+        (Active Requests)
+        (GPU Status)
+        (Model Status)
+    }
+    
+    rectangle "GPU Monitor" #2196F3 {
+        (Temperature Tracking)
+        (Utilization Graphs)
+        (Memory Usage)
+        (Power Consumption)
+    }
+    
+    rectangle "Model Analytics" #FF9800 {
+        (Performance Metrics)
+        (Context Analysis)
+        (Usage Patterns)
+        (Benchmarking)
+    }
+    
+    rectangle "API Health" #9C27B0 {
+        (Endpoint Metrics)
+        (Response Times)
+        (Success Rates)
+        (Error Tracking)
+    }
+    
+    rectangle "Configuration" #4DB6AC {
+        (Dynamic Settings)
+        (Tensor Splits)
+        (Optimization Presets)
+        (Model Parameters)
+    }
+    
+    rectangle "Production Monitor" #F44336 {
+        (System Health Score)
+        (Alert Management)
+        (Performance Trends)
+        (Log Analysis)
+    }
+}
+
+note bottom
+  15-second refresh intervals
+  Real-time data updates
+  Export capabilities
+  Responsive design
+end note
+
+@enduml
+----
+
+=== Hardware Optimization System
+
+[plantuml, hardware-optimization, svg]
+----
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+package "Hardware Optimizer" #F3E5F5 {
+    component [System Analyzer] as SA #9C27B0
+    component [Score Calculator] as SC #AB47BC
+    component [Recommendation Engine] as RE #BA68C8
+    
+    package "Analysis Components" {
+        component [CPU Analysis] as CA #E1BEE7
+        component [Memory Analysis] as MA #E1BEE7
+        component [GPU Analysis] as GA #E1BEE7
+        component [Model Analysis] as MLA #E1BEE7
+    }
+}
+
+SA --> CA : Analyze usage
+SA --> MA : Check adequacy
+SA --> GA : GPU efficiency
+SA --> MLA : Model diversity
+
+CA --> SC : CPU score
+MA --> SC : Memory score
+GA --> SC : GPU score
+MLA --> SC : Model score
+
+SC --> RE : Overall score
+
+note right of RE
+  Recommendations:
+  - GPU memory optimization
+  - Tensor split adjustments
+  - Model selection advice
+  - Scaling strategies
+end note
+
+@enduml
+----
+
+== Dashboard Screenshots
+
+=== Main Dashboard
+image::../images/llm-service-main-dashboard.png[Main Dashboard,1200,800]
+
+The main dashboard provides a unified view of system status, active requests, and real-time GPU monitoring.
+
+=== GPU Monitor Dashboard
+image::../images/llm-service-main-gpudetail.png[GPU Monitor,1200,800]
+
+Detailed GPU monitoring with temperature, utilization, and memory tracking for each Tesla M10 GPU.
+
+=== Configuration Panel
+image::../images/llm-service-main-configset.png[Configuration Panel,1200,800]
+
+Dynamic configuration panel allowing real-time system adjustments and optimization presets.
+
+=== Optimization Dashboard
+image::../images/optimization-dashboard-screenshot.png[Optimization Dashboard,1200,800]
+
+Hardware optimization insights with scoring, recommendations, and system analysis.

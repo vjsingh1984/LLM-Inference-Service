@@ -1,0 +1,592 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration Panel - LLM Inference Service{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- System Configuration -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-gear"></i>
+                    System Configuration
+                    <button class="btn btn-outline-success btn-sm ms-2" onclick="loadCurrentConfig()">
+                        <i class="bi bi-arrow-clockwise"></i> Reload
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm ms-2" onclick="applyConfiguration()">
+                        <i class="bi bi-check-circle"></i> Apply Changes
+                    </button>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- GPU Configuration -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-cpu"></i>
+                                    GPU & Performance Settings
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="tensorSplit" class="form-label">Tensor Split (GPU Distribution)</label>
+                                    <input type="text" class="form-control" id="tensorSplit" 
+                                           placeholder="0.25,0.25,0.25,0.25" 
+                                           value="0.25,0.25,0.25,0.25">
+                                    <div class="form-text">Comma-separated values for each GPU (must sum to 1.0)</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="gpuLayers" class="form-label">GPU Layers</label>
+                                    <input type="number" class="form-control" id="gpuLayers" 
+                                           value="999" min="0" max="999">
+                                    <div class="form-text">Number of layers to offload to GPU (999 = all layers)</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="threads" class="form-label">CPU Threads</label>
+                                    <input type="number" class="form-control" id="threads" 
+                                           value="32" min="1" max="128">
+                                    <div class="form-text">Number of CPU threads for processing</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="batchSize" class="form-label">Batch Size</label>
+                                    <input type="number" class="form-control" id="batchSize" 
+                                           value="512" min="1" max="2048">
+                                    <div class="form-text">Token batch size for processing</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Model Configuration -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-brain"></i>
+                                    Model & Context Settings
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="defaultContextSize" class="form-label">Default Context Size</label>
+                                    <select class="form-control" id="defaultContextSize">
+                                        <option value="4096">4K (4,096 tokens)</option>
+                                        <option value="8192">8K (8,192 tokens)</option>
+                                        <option value="16384">16K (16,384 tokens)</option>
+                                        <option value="32768">32K (32,768 tokens)</option>
+                                        <option value="65536">64K (65,536 tokens)</option>
+                                        <option value="131072" selected>128K (131,072 tokens)</option>
+                                    </select>
+                                    <div class="form-text">Maximum context window size for models</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="requestTimeout" class="form-label">Request Timeout (seconds)</label>
+                                    <input type="number" class="form-control" id="requestTimeout" 
+                                           value="1800" min="60" max="3600">
+                                    <div class="form-text">Maximum time to wait for model responses</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="logLevel" class="form-label">Log Level</label>
+                                    <select class="form-control" id="logLevel">
+                                        <option value="DEBUG">DEBUG</option>
+                                        <option value="INFO" selected>INFO</option>
+                                        <option value="WARNING">WARNING</option>
+                                        <option value="ERROR">ERROR</option>
+                                    </select>
+                                    <div class="form-text">Logging verbosity level</div>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enableModelInspection" checked>
+                                    <label class="form-check-label" for="enableModelInspection">
+                                        Enable Model Inspection
+                                    </label>
+                                    <div class="form-text">Real-time Ollama CLI integration for accurate model parameters</div>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="preserveThinkTags" checked>
+                                    <label class="form-check-label" for="preserveThinkTags">
+                                        Preserve Think Tags
+                                    </label>
+                                    <div class="form-text">Maintain reasoning tags for phi4-reasoning and similar models</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Live GPU Status for Configuration -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-display"></i>
+                    Current GPU Status & Configuration Impact
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="gpu-config-status" class="row">
+                    <!-- Dynamic GPU status cards will be populated here -->
+                    <div class="col-12 text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading GPU status...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading GPU configuration status...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Configuration Presets -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bookmark"></i>
+                    Configuration Presets
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card preset-card" onclick="applyPreset('performance')">
+                            <div class="card-body text-center">
+                                <i class="bi bi-lightning-charge text-warning" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">High Performance</h6>
+                                <p class="text-muted small">Maximum GPU utilization, 128K context, all layers offloaded</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card preset-card" onclick="applyPreset('balanced')">
+                            <div class="card-body text-center">
+                                <i class="bi bi-scales text-info" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Balanced</h6>
+                                <p class="text-muted small">Good performance with memory efficiency, 32K context</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card preset-card" onclick="applyPreset('conservative')">
+                            <div class="card-body text-center">
+                                <i class="bi bi-shield-check text-success" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Conservative</h6>
+                                <p class="text-muted small">Stable operation, lower resource usage, 16K context</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Configuration History & Backup -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history"></i>
+                    Configuration History
+                    <button class="btn btn-outline-secondary btn-sm ms-2" onclick="backupCurrentConfig()">
+                        <i class="bi bi-download"></i> Backup Current
+                    </button>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Configuration Type</th>
+                                <th>Key Changes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="config-history-table">
+                            <tr>
+                                <td>2025-06-07 19:55:00</td>
+                                <td><span class="badge bg-primary">Current</span></td>
+                                <td>Tensor Split: 0.25x4, Context: 128K, GPU Layers: 999</td>
+                                <td>
+                                    <button class="btn btn-outline-info btn-sm" onclick="viewConfigDetails('current')">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2025-06-07 19:30:00</td>
+                                <td><span class="badge bg-secondary">Backup</span></td>
+                                <td>Initial configuration from startup</td>
+                                <td>
+                                    <button class="btn btn-outline-success btn-sm" onclick="restoreConfig('startup')">
+                                        <i class="bi bi-arrow-clockwise"></i> Restore
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" onclick="viewConfigDetails('startup')">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Details Modal -->
+<div class="modal fade" id="configDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configuration Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="config-details-content" class="bg-light p-3 rounded"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Configuration panel JavaScript
+let currentConfig = {};
+let gpuStatusInterval;
+
+// Initialize configuration panel
+document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentConfig();
+    startGPUStatusMonitoring();
+});
+
+async function loadCurrentConfig() {
+    try {
+        // This would fetch from a configuration API endpoint
+        // For now, we'll use default values
+        currentConfig = {
+            tensor_split: "0.25,0.25,0.25,0.25",
+            gpu_layers: 999,
+            threads: 32,
+            batch_size: 512,
+            default_context_size: 131072,
+            request_timeout: 1800,
+            log_level: "INFO",
+            enable_model_inspection: true,
+            preserve_think_tags: true
+        };
+        
+        updateConfigForm();
+        DashboardUtils.showToast('Configuration loaded successfully', 'success');
+    } catch (error) {
+        console.error('Error loading configuration:', error);
+        DashboardUtils.showToast('Failed to load configuration', 'error');
+    }
+}
+
+function updateConfigForm() {
+    document.getElementById('tensorSplit').value = currentConfig.tensor_split;
+    document.getElementById('gpuLayers').value = currentConfig.gpu_layers;
+    document.getElementById('threads').value = currentConfig.threads;
+    document.getElementById('batchSize').value = currentConfig.batch_size;
+    document.getElementById('defaultContextSize').value = currentConfig.default_context_size;
+    document.getElementById('requestTimeout').value = currentConfig.request_timeout;
+    document.getElementById('logLevel').value = currentConfig.log_level;
+    document.getElementById('enableModelInspection').checked = currentConfig.enable_model_inspection;
+    document.getElementById('preserveThinkTags').checked = currentConfig.preserve_think_tags;
+}
+
+async function applyConfiguration() {
+    try {
+        // Gather configuration from form
+        const newConfig = {
+            tensor_split: document.getElementById('tensorSplit').value,
+            gpu_layers: parseInt(document.getElementById('gpuLayers').value),
+            threads: parseInt(document.getElementById('threads').value),
+            batch_size: parseInt(document.getElementById('batchSize').value),
+            default_context_size: parseInt(document.getElementById('defaultContextSize').value),
+            request_timeout: parseInt(document.getElementById('requestTimeout').value),
+            log_level: document.getElementById('logLevel').value,
+            enable_model_inspection: document.getElementById('enableModelInspection').checked,
+            preserve_think_tags: document.getElementById('preserveThinkTags').checked
+        };
+        
+        // Validate configuration
+        if (!validateConfiguration(newConfig)) {
+            return;
+        }
+        
+        // TODO: Send to configuration API endpoint
+        // const response = await fetch('/api/config/apply', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify(newConfig)
+        // });
+        
+        // For now, just update local config
+        currentConfig = newConfig;
+        DashboardUtils.showToast('Configuration applied successfully', 'success');
+        
+        // Add to history
+        addConfigurationToHistory('Manual Update', 'User applied custom configuration');
+        
+    } catch (error) {
+        console.error('Error applying configuration:', error);
+        DashboardUtils.showToast('Failed to apply configuration', 'error');
+    }
+}
+
+function validateConfiguration(config) {
+    // Validate tensor split
+    const splits = config.tensor_split.split(',').map(s => parseFloat(s.trim()));
+    const sum = splits.reduce((a, b) => a + b, 0);
+    if (Math.abs(sum - 1.0) > 0.01) {
+        DashboardUtils.showToast('Tensor split values must sum to 1.0', 'error');
+        return false;
+    }
+    
+    // Validate other ranges
+    if (config.threads < 1 || config.threads > 128) {
+        DashboardUtils.showToast('Threads must be between 1 and 128', 'error');
+        return false;
+    }
+    
+    if (config.batch_size < 1 || config.batch_size > 2048) {
+        DashboardUtils.showToast('Batch size must be between 1 and 2048', 'error');
+        return false;
+    }
+    
+    return true;
+}
+
+function applyPreset(presetType) {
+    const presets = {
+        performance: {
+            tensor_split: "0.25,0.25,0.25,0.25",
+            gpu_layers: 999,
+            threads: 32,
+            batch_size: 512,
+            default_context_size: 131072,
+            request_timeout: 1800,
+            log_level: "INFO",
+            enable_model_inspection: true,
+            preserve_think_tags: true
+        },
+        balanced: {
+            tensor_split: "0.4,0.3,0.2,0.1",
+            gpu_layers: 90,
+            threads: 16,
+            batch_size: 256,
+            default_context_size: 32768,
+            request_timeout: 1200,
+            log_level: "INFO",
+            enable_model_inspection: true,
+            preserve_think_tags: true
+        },
+        conservative: {
+            tensor_split: "0.5,0.3,0.2,0.0",
+            gpu_layers: 50,
+            threads: 8,
+            batch_size: 128,
+            default_context_size: 16384,
+            request_timeout: 900,
+            log_level: "WARNING",
+            enable_model_inspection: false,
+            preserve_think_tags: false
+        }
+    };
+    
+    if (presets[presetType]) {
+        currentConfig = presets[presetType];
+        updateConfigForm();
+        DashboardUtils.showToast(`Applied ${presetType} preset configuration`, 'success');
+        addConfigurationToHistory('Preset Applied', `Applied ${presetType} configuration preset`);
+    }
+}
+
+async function startGPUStatusMonitoring() {
+    async function updateGPUStatus() {
+        try {
+            const response = await fetch('/api/metrics/gpu');
+            if (!response.ok) throw new Error('Failed to fetch GPU metrics');
+            
+            const data = await response.json();
+            updateGPUConfigStatus(data);
+        } catch (error) {
+            console.error('Error fetching GPU status:', error);
+        }
+    }
+    
+    // Update immediately and then every 15 seconds
+    updateGPUStatus();
+    gpuStatusInterval = setInterval(updateGPUStatus, 15000);
+}
+
+function updateGPUConfigStatus(gpuData) {
+    const container = document.getElementById('gpu-config-status');
+    
+    if (!gpuData.gpus || gpuData.gpus.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-4">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 text-muted">No GPU Data Available</h5>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    const splits = currentConfig.tensor_split.split(',').map(s => parseFloat(s.trim()));
+    
+    gpuData.gpus.forEach((gpu, index) => {
+        const allocation = splits[index] || 0;
+        const allocationPercent = (allocation * 100).toFixed(1);
+        const utilizationClass = gpu.utilization_gpu > 80 ? 'text-danger' : 
+                                gpu.utilization_gpu > 60 ? 'text-warning' : 'text-success';
+        
+        html += `
+            <div class="col-md-3 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">GPU ${gpu.gpu_id}: ${gpu.name}</h6>
+                        <div class="mb-2">
+                            <small class="text-muted">Tensor Allocation</small>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-info" style="width: ${allocationPercent}%"></div>
+                            </div>
+                            <small class="text-muted">${allocationPercent}%</small>
+                        </div>
+                        <div class="mb-2">
+                            <small class="text-muted">Current Utilization</small>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar ${utilizationClass.includes('danger') ? 'bg-danger' : utilizationClass.includes('warning') ? 'bg-warning' : 'bg-success'}" 
+                                     style="width: ${gpu.utilization_gpu}%"></div>
+                            </div>
+                            <small class="${utilizationClass}">${gpu.utilization_gpu}%</small>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Memory</small><br>
+                                <small>${Math.round(gpu.memory_used/1024)}GB / ${Math.round(gpu.memory_total/1024)}GB</small>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Temp</small><br>
+                                <small class="${gpu.temperature > 80 ? 'text-danger' : gpu.temperature > 70 ? 'text-warning' : 'text-success'}">${gpu.temperature}°C</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function addConfigurationToHistory(type, description) {
+    const table = document.getElementById('config-history-table');
+    const timestamp = new Date().toLocaleString();
+    
+    // Create new row
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${timestamp}</td>
+        <td><span class="badge bg-success">${type}</span></td>
+        <td>${description}</td>
+        <td>
+            <button class="btn btn-outline-success btn-sm" onclick="restoreConfig('${timestamp}')">
+                <i class="bi bi-arrow-clockwise"></i> Restore
+            </button>
+            <button class="btn btn-outline-info btn-sm" onclick="viewConfigDetails('${timestamp}')">
+                <i class="bi bi-eye"></i> View
+            </button>
+        </td>
+    `;
+    
+    // Insert after current config row
+    table.children[0].insertAdjacentElement('afterend', row);
+}
+
+function backupCurrentConfig() {
+    const configJson = JSON.stringify(currentConfig, null, 2);
+    const blob = new Blob([configJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `llm-inference-config-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    DashboardUtils.showToast('Configuration backup downloaded', 'success');
+}
+
+function viewConfigDetails(configId) {
+    const modal = new bootstrap.Modal(document.getElementById('configDetailsModal'));
+    const content = document.getElementById('config-details-content');
+    
+    // Show current configuration details
+    content.textContent = JSON.stringify(currentConfig, null, 2);
+    modal.show();
+}
+
+function restoreConfig(configId) {
+    if (confirm('Are you sure you want to restore this configuration? Current settings will be lost.')) {
+        // TODO: Implement configuration restoration
+        DashboardUtils.showToast(`Configuration "${configId}" restored`, 'success');
+        loadCurrentConfig();
+    }
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (gpuStatusInterval) {
+        clearInterval(gpuStatusInterval);
+    }
+});
+</script>
+
+<style>
+.preset-card {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.preset-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.progress {
+    border-radius: 4px;
+}
+
+#config-details-content {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}

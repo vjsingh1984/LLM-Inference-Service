@@ -1,0 +1,406 @@
+= API Reference
+:toc:
+:toclevels: 3
+
+== Overview
+
+The LLM Inference Service provides multiple API endpoints compatible with various AI service providers. All endpoints support both streaming and non-streaming responses.
+
+== Authentication
+
+Currently, the service does not require authentication. In production deployments, implement appropriate authentication mechanisms.
+
+== Base URL
+
+```
+http://localhost:11436
+```
+
+== Chat Completion APIs
+
+=== OpenAI Compatible
+
+==== Create Chat Completion
+
+[source,http]
+----
+POST /api/chat/completions
+Content-Type: application/json
+
+{
+  "model": "phi4:latest",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "Hello, how are you?"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 200,
+  "stream": false
+}
+----
+
+**Response:**
+[source,json]
+----
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "phi4:latest",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "I'm doing well, thank you! How can I help you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 15,
+    "total_tokens": 35
+  }
+}
+----
+
+=== Ollama Compatible
+
+==== Generate Completion
+
+[source,http]
+----
+POST /api/generate
+Content-Type: application/json
+
+{
+  "model": "llama3:70b",
+  "prompt": "Why is the sky blue?",
+  "stream": false,
+  "options": {
+    "temperature": 0.8,
+    "num_predict": 100,
+    "num_ctx": 8192
+  }
+}
+----
+
+==== Chat Completion
+
+[source,http]
+----
+POST /api/chat
+Content-Type: application/json
+
+{
+  "model": "phi4-reasoning:latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain quantum computing"
+    }
+  ],
+  "stream": false
+}
+----
+
+=== vLLM Compatible
+
+==== Create Completion
+
+[source,http]
+----
+POST /v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "mixtral:8x7b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is machine learning?"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 150
+}
+----
+
+=== HuggingFace TGI Compatible
+
+==== Generate Text
+
+[source,http]
+----
+POST /generate
+Content-Type: application/json
+
+{
+  "inputs": "The future of AI is",
+  "parameters": {
+    "max_new_tokens": 50,
+    "temperature": 0.9,
+    "top_p": 0.95
+  }
+}
+----
+
+== Model Management APIs
+
+=== List Models
+
+[source,http]
+----
+GET /api/models
+----
+
+**Response:**
+[source,json]
+----
+{
+  "models": [
+    {
+      "name": "phi4:latest",
+      "id": "phi4:latest",
+      "parameter_size": "14B",
+      "quantization": "Q8_0",
+      "context_size": 16384,
+      "created": "2025-06-07T12:00:00Z"
+    },
+    {
+      "name": "llama3:70b",
+      "id": "llama3:70b",
+      "parameter_size": "70B",
+      "quantization": "Q4_K_M",
+      "context_size": 8192,
+      "created": "2025-06-07T12:00:00Z"
+    }
+  ]
+}
+----
+
+=== Show Model Details
+
+[source,http]
+----
+POST /api/show
+Content-Type: application/json
+
+{
+  "name": "phi4:latest"
+}
+----
+
+**Response:**
+[source,json]
+----
+{
+  "license": "Apache 2.0",
+  "modelfile": "# Modelfile generated...",
+  "parameters": "parameter_size 14B\nquantization_level Q8_0",
+  "template": "{{- if .System }}{{ .System }}{{ end }}...",
+  "details": {
+    "format": "gguf",
+    "family": "phi",
+    "parameter_size": "14B",
+    "quantization_level": "Q8_0"
+  },
+  "model_info": {
+    "general.architecture": "phi",
+    "phi.context_length": 16384,
+    "phi.embedding_length": 4096
+  }
+}
+----
+
+== Monitoring APIs
+
+=== Health Check
+
+[source,http]
+----
+GET /health
+----
+
+**Response:**
+[source,json]
+----
+{
+  "status": "healthy",
+  "timestamp": "2025-06-07T20:30:00Z",
+  "components": {
+    "executor": "healthy",
+    "models": "52 available",
+    "active_requests": 3
+  }
+}
+----
+
+=== Dashboard Metrics
+
+[source,http]
+----
+GET /api/metrics/dashboard
+----
+
+**Response:**
+[source,json]
+----
+{
+  "status": {
+    "status": "healthy",
+    "timestamp": "2025-06-07T20:30:00Z"
+  },
+  "requests": [
+    {
+      "request_id": "abc123",
+      "status": "processing",
+      "model": "phi4:latest",
+      "progress": 45,
+      "total": 100
+    }
+  ],
+  "models": [...],
+  "gpu_metrics": {
+    "gpus": [...],
+    "total_memory_used": 9120,
+    "total_memory_available": 32768
+  }
+}
+----
+
+=== GPU Metrics
+
+[source,http]
+----
+GET /api/metrics/gpu
+----
+
+**Response:**
+[source,json]
+----
+{
+  "timestamp": "2025-06-07T20:30:00Z",
+  "gpus": [
+    {
+      "index": 0,
+      "name": "Tesla M10",
+      "temperature": 45,
+      "utilization_percent": 35.5,
+      "memory_used": 2280,
+      "memory_total": 8192,
+      "power_draw": 30,
+      "power_limit": 225
+    }
+  ],
+  "driver_version": "535.154.05",
+  "cuda_version": "12.2"
+}
+----
+
+=== API Endpoint Metrics
+
+[source,http]
+----
+GET /api/metrics/apis
+----
+
+=== Hardware Optimization Insights
+
+[source,http]
+----
+GET /api/metrics/optimization
+----
+
+== Configuration APIs
+
+=== Update Configuration
+
+[source,http]
+----
+POST /api/dashboard/configure
+Content-Type: application/json
+
+{
+  "tensor_split": "0.25,0.25,0.25,0.25",
+  "gpu_layers": 999,
+  "context_size": 131072,
+  "batch_size": 512
+}
+----
+
+=== Weight Distribution Management
+
+[source,http]
+----
+GET /api/dashboard/weight-distribution
+POST /api/dashboard/weight-distribution
+
+{
+  "preset": "balanced",
+  "model_name": "llama3:70b"
+}
+----
+
+== Progress Tracking
+
+=== Get Request Progress
+
+[source,http]
+----
+GET /api/progress/{request_id}
+----
+
+=== Dismiss Request
+
+[source,http]
+----
+POST /api/dismiss/{request_id}
+----
+
+== Response Formats
+
+=== Streaming Responses
+
+When `stream: true` is set, responses are sent as Server-Sent Events (SSE):
+
+[source]
+----
+data: {"choices":[{"delta":{"content":"Hello"},"index":0}]}
+
+data: {"choices":[{"delta":{"content":" there"},"index":0}]}
+
+data: [DONE]
+----
+
+=== Error Responses
+
+[source,json]
+----
+{
+  "error": {
+    "message": "Model not found",
+    "type": "model_not_found",
+    "code": 404
+  }
+}
+----
+
+== Rate Limiting
+
+Currently no rate limiting is implemented. In production, implement appropriate rate limiting based on your requirements.
+
+== Best Practices
+
+1. **Model Selection**: Use the `/api/models` endpoint to discover available models before making requests
+2. **Context Limits**: Check model capabilities with `/api/show` to understand context window sizes
+3. **Streaming**: Use streaming for better user experience with long responses
+4. **Error Handling**: Implement proper error handling for all API calls
+5. **Monitoring**: Use the dashboard metrics endpoints to monitor system health
