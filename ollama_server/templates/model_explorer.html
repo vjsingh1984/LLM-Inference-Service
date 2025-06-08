@@ -1,0 +1,984 @@
+{% extends "base.html" %}
+
+{% block title %}Interactive Model Explorer - LLM Inference Service{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Model Discovery & Overview -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-search"></i>
+                    Model Discovery & Analysis
+                    <button class="btn btn-outline-success btn-sm ms-2" onclick="refreshModelData()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Models
+                    </button>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Total Models</h5>
+                                <h2 class="text-primary" id="total-models-count">--</h2>
+                                <small class="text-muted">Available for analysis</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Benchmarked</h5>
+                                <h2 class="text-success" id="benchmarked-count">--</h2>
+                                <small class="text-muted">Performance tested</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Interactive Tests</h5>
+                                <h2 class="text-info" id="test-results-count">--</h2>
+                                <small class="text-muted">User evaluations</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model Comparison Tool -->
+    <div class="col-md-8 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bar-chart"></i>
+                    Model Comparison Tool
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="comparison-models" class="form-label">Select Models to Compare</label>
+                        <select multiple class="form-select" id="comparison-models" size="6">
+                            <!-- Populated by JavaScript -->
+                        </select>
+                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple models</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="comparison-type" class="form-label">Comparison Type</label>
+                        <select class="form-select" id="comparison-type">
+                            <option value="performance">Performance Metrics</option>
+                            <option value="capability">Capabilities & Features</option>
+                            <option value="cost">Cost Effectiveness</option>
+                        </select>
+                        
+                        <button class="btn btn-primary mt-3 w-100" onclick="compareSelectedModels()">
+                            <i class="bi bi-graph-up"></i> Compare Models
+                        </button>
+                        
+                        <button class="btn btn-outline-secondary mt-2 w-100" onclick="exportComparison()">
+                            <i class="bi bi-download"></i> Export Results
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="comparison-results" style="display: none;">
+                    <hr>
+                    <h6>Comparison Results</h6>
+                    <div id="comparison-content">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model Recommendations -->
+    <div class="col-md-4 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightbulb"></i>
+                    Smart Recommendations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="use-case-input" class="form-label">Describe Your Use Case</label>
+                    <textarea class="form-control" id="use-case-input" rows="3" 
+                              placeholder="e.g., 'Code generation for Python', 'Creative writing assistant', 'Math problem solving'"></textarea>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label for="max-vram" class="form-label">Max VRAM (GB)</label>
+                        <input type="number" class="form-control" id="max-vram" value="32" min="4" max="128">
+                    </div>
+                    <div class="col-6">
+                        <label for="max-response-time" class="form-label">Max Response Time (ms)</label>
+                        <input type="number" class="form-control" id="max-response-time" value="10000" min="1000" max="60000">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Required Capabilities</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="req-code">
+                        <label class="form-check-label" for="req-code">Code Generation</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="req-reasoning">
+                        <label class="form-check-label" for="req-reasoning">Logical Reasoning</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="req-multimodal">
+                        <label class="form-check-label" for="req-multimodal">Multimodal (Vision)</label>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success w-100" onclick="getRecommendations()">
+                    <i class="bi bi-stars"></i> Get Recommendations
+                </button>
+                
+                <div id="recommendations-results" class="mt-3" style="display: none;">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Interactive Model Tester -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-chat-dots"></i>
+                    Interactive Model Tester
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="test-model-select" class="form-label">Select Model</label>
+                            <select class="form-select" id="test-model-select">
+                                <!-- Populated by JavaScript -->
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="test-category" class="form-label">Test Category</label>
+                            <select class="form-select" id="test-category">
+                                <option value="general">General Knowledge</option>
+                                <option value="coding">Code Generation</option>
+                                <option value="reasoning">Logical Reasoning</option>
+                                <option value="creative">Creative Writing</option>
+                                <option value="math">Mathematics</option>
+                                <option value="science">Science</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Quick Test Prompts</label>
+                            <div class="list-group" id="quick-prompts">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary w-100" onclick="runBenchmarkTest()">
+                            <i class="bi bi-speedometer2"></i> Run Benchmark
+                        </button>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="custom-prompt" class="form-label">Custom Test Prompt</label>
+                            <textarea class="form-control" id="custom-prompt" rows="4" 
+                                      placeholder="Enter your custom prompt here..."></textarea>
+                        </div>
+                        
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn btn-success" onclick="runInteractiveTest()">
+                                <i class="bi bi-play"></i> Test Model
+                            </button>
+                            <button class="btn btn-outline-info" onclick="clearTestResults()">
+                                <i class="bi bi-x-circle"></i> Clear Results
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="saveTestSession()">
+                                <i class="bi bi-save"></i> Save Session
+                            </button>
+                        </div>
+                        
+                        <div id="test-output" style="min-height: 200px; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; background: #f8f9fa;">
+                            <div class="text-muted text-center">
+                                <i class="bi bi-chat-square-text" style="font-size: 2rem;"></i>
+                                <p class="mt-2">Test output will appear here</p>
+                            </div>
+                        </div>
+                        
+                        <div id="test-feedback" style="display: none;" class="mt-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Rate this response:</h6>
+                                    <div class="btn-group" role="group">
+                                        <input type="radio" class="btn-check" name="rating" id="rating1" value="1">
+                                        <label class="btn btn-outline-warning" for="rating1">1⭐</label>
+                                        
+                                        <input type="radio" class="btn-check" name="rating" id="rating2" value="2">
+                                        <label class="btn btn-outline-warning" for="rating2">2⭐</label>
+                                        
+                                        <input type="radio" class="btn-check" name="rating" id="rating3" value="3">
+                                        <label class="btn btn-outline-warning" for="rating3">3⭐</label>
+                                        
+                                        <input type="radio" class="btn-check" name="rating" id="rating4" value="4">
+                                        <label class="btn btn-outline-warning" for="rating4">4⭐</label>
+                                        
+                                        <input type="radio" class="btn-check" name="rating" id="rating5" value="5">
+                                        <label class="btn btn-outline-warning" for="rating5">5⭐</label>
+                                    </div>
+                                    
+                                    <div class="mt-2">
+                                        <input type="text" class="form-control" id="feedback-notes" placeholder="Optional notes about this response...">
+                                    </div>
+                                    
+                                    <button class="btn btn-primary btn-sm mt-2" onclick="submitFeedback()">
+                                        Submit Feedback
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model Analytics Dashboard -->
+    <div class="col-12 mb-4">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    Model Performance Analytics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <select class="form-select" id="analytics-model-select">
+                            <option value="">Select model for detailed analytics</option>
+                            <!-- Populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="analyticsView" id="view-overview" checked>
+                            <label class="btn btn-outline-primary" for="view-overview">Overview</label>
+                            
+                            <input type="radio" class="btn-check" name="analyticsView" id="view-performance">
+                            <label class="btn btn-outline-primary" for="view-performance">Performance</label>
+                            
+                            <input type="radio" class="btn-check" name="analyticsView" id="view-capabilities">
+                            <label class="btn btn-outline-primary" for="view-capabilities">Capabilities</label>
+                            
+                            <input type="radio" class="btn-check" name="analyticsView" id="view-usage">
+                            <label class="btn btn-outline-primary" for="view-usage">Usage Patterns</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="analytics-content">
+                    <div class="text-center py-5">
+                        <i class="bi bi-bar-chart" style="font-size: 3rem; color: #6c757d;"></i>
+                        <h5 class="mt-3 text-muted">Select a model to view detailed analytics</h5>
+                        <p class="text-muted">Choose from the dropdown above to explore model performance, capabilities, and usage patterns.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Model Details Modal -->
+<div class="modal fade" id="modelDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Model Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Model Specifications</h6>
+                        <div id="model-specs-content">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Performance Metrics</h6>
+                        <div id="model-performance-content">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6>Capability Analysis</h6>
+                        <div id="model-capabilities-content">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="startBenchmarkFromModal()">
+                    <i class="bi bi-speedometer2"></i> Run Benchmark
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Model Explorer JavaScript
+let explorerData = {};
+let currentModels = [];
+let testPrompts = {};
+let currentTestResult = null;
+
+// Initialize model explorer
+document.addEventListener('DOMContentLoaded', function() {
+    initializeModelExplorer();
+    
+    // Analytics view switcher
+    document.querySelectorAll('input[name="analyticsView"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateAnalyticsView(this.value.replace('view-', ''));
+        });
+    });
+    
+    // Model selection handlers
+    document.getElementById('analytics-model-select').addEventListener('change', function() {
+        if (this.value) {
+            loadModelAnalytics(this.value);
+        }
+    });
+    
+    document.getElementById('test-category').addEventListener('change', function() {
+        updateQuickPrompts(this.value);
+    });
+});
+
+async function initializeModelExplorer() {
+    try {
+        await Promise.all([
+            loadModelsData(),
+            loadTestPrompts(),
+            loadExplorerData()
+        ]);
+        
+        populateModelSelectors();
+        updateQuickPrompts('general');
+        
+    } catch (error) {
+        console.error('Error initializing model explorer:', error);
+        DashboardUtils.showToast('Failed to initialize model explorer', 'error');
+    }
+}
+
+async function loadModelsData() {
+    try {
+        const response = await fetch('/api/models');
+        if (!response.ok) throw new Error('Failed to load models');
+        
+        const data = await response.json();
+        currentModels = data.models || [];
+        
+        document.getElementById('total-models-count').textContent = currentModels.length;
+    } catch (error) {
+        console.error('Error loading models:', error);
+        currentModels = [];
+    }
+}
+
+async function loadTestPrompts() {
+    // Define test prompts for different categories
+    testPrompts = {
+        general: [
+            "What is artificial intelligence?",
+            "Explain quantum computing in simple terms.",
+            "What are the benefits of renewable energy?",
+            "How does machine learning work?",
+            "What is the future of space exploration?"
+        ],
+        coding: [
+            "Write a Python function to sort a list of numbers.",
+            "Explain the difference between classes and objects in programming.",
+            "How do you implement a binary search algorithm?",
+            "What are the advantages of functional programming?",
+            "Write a SQL query to find duplicate records."
+        ],
+        reasoning: [
+            "If all roses are flowers and some flowers fade quickly, can we conclude that some roses fade quickly?",
+            "A train leaves at 9 AM traveling at 60 mph. Another leaves at 10 AM from the same station traveling at 80 mph in the same direction. When will the second train catch up?",
+            "You have 3 boxes. One contains only apples, one only oranges, one both. All labels are wrong. How many fruits must you draw to correctly label all boxes?",
+            "If it takes 5 machines 5 minutes to make 5 widgets, how long would it take 100 machines to make 100 widgets?",
+            "A bat and ball cost $1.10 total. The bat costs $1 more than the ball. How much does the ball cost?"
+        ],
+        creative: [
+            "Write a short story about a robot discovering emotions.",
+            "Create a haiku about artificial intelligence.",
+            "Describe a futuristic city from the perspective of a time traveler.",
+            "Write a dialogue between two AI systems discussing consciousness.",
+            "Compose a limerick about machine learning."
+        ],
+        math: [
+            "Calculate the derivative of x^3 + 2x^2 - 5x + 1",
+            "Solve the quadratic equation: 2x^2 + 5x - 3 = 0",
+            "Find the area of a circle with radius 7 cm",
+            "What is the probability of rolling two dice and getting a sum of 8?",
+            "Calculate the compound interest on $1000 at 5% annually for 3 years"
+        ],
+        science: [
+            "Explain photosynthesis and its importance to life on Earth.",
+            "What causes the Northern Lights (Aurora Borealis)?",
+            "How does DNA replication work?",
+            "Explain the greenhouse effect and its impact on climate.",
+            "What is CRISPR and how is it used in gene editing?"
+        ]
+    };
+}
+
+async function loadExplorerData() {
+    try {
+        const response = await fetch('/api/model-explorer/data');
+        if (response.ok) {
+            explorerData = await response.json();
+        } else {
+            explorerData = {
+                benchmarks: [],
+                test_results: [],
+                capabilities: {}
+            };
+        }
+        
+        // Update counters
+        document.getElementById('benchmarked-count').textContent = Object.keys(explorerData.capabilities || {}).length;
+        document.getElementById('test-results-count').textContent = (explorerData.test_results || []).length;
+        
+    } catch (error) {
+        console.error('Error loading explorer data:', error);
+        explorerData = { benchmarks: [], test_results: [], capabilities: {} };
+    }
+}
+
+function populateModelSelectors() {
+    const selectors = [
+        'comparison-models',
+        'test-model-select', 
+        'analytics-model-select'
+    ];
+    
+    selectors.forEach(selectorId => {
+        const selector = document.getElementById(selectorId);
+        
+        if (selectorId === 'comparison-models') {
+            // Multi-select for comparison
+            selector.innerHTML = '';
+            currentModels.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.name;
+                option.textContent = `${model.name} (${model.parameter_size || 'Unknown size'})`;
+                selector.appendChild(option);
+            });
+        } else {
+            // Single select for others
+            selector.innerHTML = '<option value="">Select a model...</option>';
+            currentModels.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.name;
+                option.textContent = `${model.name} (${model.parameter_size || 'Unknown size'})`;
+                selector.appendChild(option);
+            });
+        }
+    });
+}
+
+function updateQuickPrompts(category) {
+    const container = document.getElementById('quick-prompts');
+    const prompts = testPrompts[category] || [];
+    
+    container.innerHTML = '';
+    prompts.slice(0, 3).forEach((prompt, index) => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item list-group-item-action';
+        item.style.cursor = 'pointer';
+        item.textContent = prompt.length > 50 ? prompt.substring(0, 47) + '...' : prompt;
+        item.title = prompt;
+        item.onclick = () => {
+            document.getElementById('custom-prompt').value = prompt;
+        };
+        container.appendChild(item);
+    });
+}
+
+async function compareSelectedModels() {
+    const selector = document.getElementById('comparison-models');
+    const selectedModels = Array.from(selector.selectedOptions).map(option => option.value);
+    const comparisonType = document.getElementById('comparison-type').value;
+    
+    if (selectedModels.length < 2) {
+        DashboardUtils.showToast('Please select at least 2 models to compare', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/model-explorer/compare', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                models: selectedModels,
+                comparison_type: comparisonType
+            })
+        });
+        
+        if (!response.ok) throw new Error('Comparison failed');
+        
+        const comparisonData = await response.json();
+        displayComparisonResults(comparisonData);
+        
+    } catch (error) {
+        console.error('Error comparing models:', error);
+        DashboardUtils.showToast('Failed to compare models', 'error');
+    }
+}
+
+function displayComparisonResults(data) {
+    const container = document.getElementById('comparison-content');
+    const resultsDiv = document.getElementById('comparison-results');
+    
+    let html = `
+        <div class="alert alert-info">
+            <strong>Winner:</strong> ${data.winner}
+            <br><small>${data.summary}</small>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+    `;
+    
+    // Add metric headers
+    const firstModel = Object.keys(data.metrics)[0];
+    if (firstModel) {
+        Object.keys(data.metrics[firstModel]).forEach(metric => {
+            html += `<th>${metric.replace('_', ' ').toUpperCase()}</th>`;
+        });
+    }
+    html += '</tr></thead><tbody>';
+    
+    // Add model rows
+    Object.entries(data.metrics).forEach(([modelId, metrics]) => {
+        html += `<tr${modelId === data.winner ? ' class="table-success"' : ''}>`;
+        html += `<td><strong>${modelId}</strong></td>`;
+        Object.values(metrics).forEach(value => {
+            const formattedValue = typeof value === 'number' ? 
+                (value % 1 === 0 ? value.toString() : value.toFixed(2)) : 
+                value.toString();
+            html += `<td>${formattedValue}</td>`;
+        });
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table></div>';
+    
+    container.innerHTML = html;
+    resultsDiv.style.display = 'block';
+}
+
+async function getRecommendations() {
+    const useCase = document.getElementById('use-case-input').value;
+    const maxVram = parseFloat(document.getElementById('max-vram').value);
+    const maxResponseTime = parseInt(document.getElementById('max-response-time').value);
+    
+    const requiredCapabilities = [];
+    if (document.getElementById('req-code').checked) requiredCapabilities.push('code');
+    if (document.getElementById('req-reasoning').checked) requiredCapabilities.push('reasoning');
+    if (document.getElementById('req-multimodal').checked) requiredCapabilities.push('multimodal');
+    
+    if (!useCase.trim()) {
+        DashboardUtils.showToast('Please describe your use case', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/model-explorer/recommendations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                use_case: useCase,
+                constraints: {
+                    max_vram_gb: maxVram,
+                    max_response_time_ms: maxResponseTime,
+                    capabilities: requiredCapabilities
+                }
+            })
+        });
+        
+        if (!response.ok) throw new Error('Failed to get recommendations');
+        
+        const recommendations = await response.json();
+        displayRecommendations(recommendations);
+        
+    } catch (error) {
+        console.error('Error getting recommendations:', error);
+        DashboardUtils.showToast('Failed to get recommendations', 'error');
+    }
+}
+
+function displayRecommendations(recommendations) {
+    const container = document.getElementById('recommendations-results');
+    
+    if (!recommendations || recommendations.length === 0) {
+        container.innerHTML = '<div class="alert alert-warning">No models match your criteria. Try adjusting the constraints.</div>';
+        container.style.display = 'block';
+        return;
+    }
+    
+    let html = '<h6>Recommended Models</h6>';
+    
+    recommendations.slice(0, 5).forEach((rec, index) => {
+        const [modelId, score, reasoning] = rec;
+        const scoreClass = score >= 80 ? 'success' : score >= 60 ? 'warning' : 'secondary';
+        
+        html += `
+            <div class="card mb-2">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title mb-1">${index + 1}. ${modelId}</h6>
+                            <p class="card-text small mb-0">${reasoning}</p>
+                        </div>
+                        <span class="badge bg-${scoreClass}">${score.toFixed(0)}</span>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm mt-2" onclick="selectModelForTesting('${modelId}')">
+                        <i class="bi bi-play"></i> Test This Model
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    container.style.display = 'block';
+}
+
+function selectModelForTesting(modelId) {
+    document.getElementById('test-model-select').value = modelId;
+    DashboardUtils.showToast(`Selected ${modelId} for testing`, 'success');
+}
+
+async function runInteractiveTest() {
+    const modelId = document.getElementById('test-model-select').value;
+    const prompt = document.getElementById('custom-prompt').value;
+    
+    if (!modelId) {
+        DashboardUtils.showToast('Please select a model', 'warning');
+        return;
+    }
+    
+    if (!prompt.trim()) {
+        DashboardUtils.showToast('Please enter a test prompt', 'warning');
+        return;
+    }
+    
+    const outputDiv = document.getElementById('test-output');
+    outputDiv.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Testing model ${modelId}...</p>
+        </div>
+    `;
+    
+    try {
+        const startTime = performance.now();
+        
+        const response = await fetch('/api/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: modelId,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 200,
+                temperature: 0.7
+            })
+        });
+        
+        if (!response.ok) throw new Error('Test request failed');
+        
+        const result = await response.json();
+        const endTime = performance.now();
+        const responseTime = endTime - startTime;
+        
+        const responseText = result.choices?.[0]?.message?.content || 'No response generated';
+        const tokensGenerated = result.usage?.completion_tokens || 0;
+        
+        // Display results
+        outputDiv.innerHTML = `
+            <div class="mb-3">
+                <strong>Model:</strong> ${modelId}<br>
+                <strong>Response Time:</strong> ${responseTime.toFixed(0)}ms<br>
+                <strong>Tokens Generated:</strong> ${tokensGenerated}
+            </div>
+            <div class="border rounded p-3 bg-white">
+                <strong>Response:</strong><br>
+                ${responseText}
+            </div>
+        `;
+        
+        // Store test result
+        currentTestResult = {
+            model_id: modelId,
+            prompt: prompt,
+            response: responseText,
+            response_time_ms: responseTime,
+            tokens_generated: tokensGenerated
+        };
+        
+        // Show feedback section
+        document.getElementById('test-feedback').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error running test:', error);
+        outputDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <strong>Test Failed:</strong> ${error.message}
+            </div>
+        `;
+    }
+}
+
+async function runBenchmarkTest() {
+    const modelId = document.getElementById('test-model-select').value;
+    const category = document.getElementById('test-category').value;
+    
+    if (!modelId) {
+        DashboardUtils.showToast('Please select a model', 'warning');
+        return;
+    }
+    
+    try {
+        DashboardUtils.showToast('Running benchmark test...', 'info');
+        
+        const response = await fetch('/api/model-explorer/benchmark', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model_id: modelId,
+                test_category: category
+            })
+        });
+        
+        if (!response.ok) throw new Error('Benchmark failed');
+        
+        const benchmark = await response.json();
+        
+        DashboardUtils.showToast('Benchmark completed successfully', 'success');
+        
+        // Update the display with benchmark results
+        const outputDiv = document.getElementById('test-output');
+        outputDiv.innerHTML = `
+            <div class="alert alert-success">
+                <h6>Benchmark Results for ${modelId}</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Response Time:</strong> ${benchmark.response_time_ms.toFixed(0)}ms<br>
+                        <strong>Tokens/Second:</strong> ${benchmark.tokens_per_second.toFixed(1)}<br>
+                        <strong>Quality Score:</strong> ${benchmark.quality_score.toFixed(1)}/100
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Memory Usage:</strong> ${benchmark.memory_usage_mb.toFixed(1)}MB<br>
+                        <strong>GPU Utilization:</strong> ${benchmark.gpu_utilization_percent.toFixed(1)}%<br>
+                        <strong>Category:</strong> ${category}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Error running benchmark:', error);
+        DashboardUtils.showToast('Benchmark failed', 'error');
+    }
+}
+
+async function submitFeedback() {
+    if (!currentTestResult) return;
+    
+    const rating = document.querySelector('input[name="rating"]:checked')?.value;
+    const notes = document.getElementById('feedback-notes').value;
+    
+    if (!rating) {
+        DashboardUtils.showToast('Please provide a rating', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/model-explorer/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ...currentTestResult,
+                user_rating: parseInt(rating),
+                notes: notes
+            })
+        });
+        
+        if (response.ok) {
+            DashboardUtils.showToast('Feedback submitted successfully', 'success');
+            document.getElementById('test-feedback').style.display = 'none';
+            
+            // Reset form
+            document.querySelectorAll('input[name="rating"]').forEach(input => input.checked = false);
+            document.getElementById('feedback-notes').value = '';
+        }
+        
+    } catch (error) {
+        console.error('Error submitting feedback:', error);
+        DashboardUtils.showToast('Failed to submit feedback', 'error');
+    }
+}
+
+async function loadModelAnalytics(modelId) {
+    try {
+        const response = await fetch(`/api/model-explorer/analytics/${modelId}`);
+        if (!response.ok) throw new Error('Failed to load analytics');
+        
+        const analytics = await response.json();
+        displayModelAnalytics(analytics);
+        
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+        DashboardUtils.showToast('Failed to load model analytics', 'error');
+    }
+}
+
+function displayModelAnalytics(analytics) {
+    const container = document.getElementById('analytics-content');
+    const currentView = document.querySelector('input[name="analyticsView"]:checked').value.replace('view-', '');
+    
+    if (currentView === 'overview') {
+        displayAnalyticsOverview(analytics, container);
+    } else if (currentView === 'performance') {
+        displayAnalyticsPerformance(analytics, container);
+    } else if (currentView === 'capabilities') {
+        displayAnalyticsCapabilities(analytics, container);
+    } else if (currentView === 'usage') {
+        displayAnalyticsUsage(analytics, container);
+    }
+}
+
+function displayAnalyticsOverview(analytics, container) {
+    const capabilities = analytics.capabilities || {};
+    const benchmarks = analytics.benchmark_summary || {};
+    const tests = analytics.test_summary || {};
+    
+    container.innerHTML = `
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5>Model Overview</h5>
+                        <p><strong>Architecture:</strong> ${capabilities.architecture || 'Unknown'}</p>
+                        <p><strong>Parameters:</strong> ${(capabilities.parameter_count / 1000000000).toFixed(1)}B</p>
+                        <p><strong>Context Window:</strong> ${(capabilities.context_window / 1000).toFixed(0)}K</p>
+                        <p><strong>Performance:</strong> ${capabilities.performance_rating || 'Unknown'}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5>Benchmark Results</h5>
+                        <p><strong>Tests Run:</strong> ${benchmarks.total_benchmarks || 0}</p>
+                        <p><strong>Avg Response Time:</strong> ${(benchmarks.avg_response_time_ms || 0).toFixed(0)}ms</p>
+                        <p><strong>Avg Quality Score:</strong> ${(benchmarks.avg_quality_score || 0).toFixed(1)}/100</p>
+                        <p><strong>Best Category:</strong> ${benchmarks.best_category || 'N/A'}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5>User Testing</h5>
+                        <p><strong>Interactive Tests:</strong> ${tests.total_tests || 0}</p>
+                        <p><strong>Avg User Rating:</strong> ${tests.avg_user_rating ? tests.avg_user_rating.toFixed(1) + '⭐' : 'N/A'}</p>
+                        <p><strong>Total Tokens:</strong> ${DashboardUtils.formatNumber(tests.total_tokens_generated || 0)}</p>
+                        <p><strong>Avg Response Time:</strong> ${(tests.avg_response_time_ms || 0).toFixed(0)}ms</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function updateAnalyticsView(view) {
+    const modelId = document.getElementById('analytics-model-select').value;
+    if (modelId) {
+        loadModelAnalytics(modelId);
+    }
+}
+
+// Utility functions
+function clearTestResults() {
+    document.getElementById('test-output').innerHTML = `
+        <div class="text-muted text-center">
+            <i class="bi bi-chat-square-text" style="font-size: 2rem;"></i>
+            <p class="mt-2">Test output will appear here</p>
+        </div>
+    `;
+    document.getElementById('test-feedback').style.display = 'none';
+    currentTestResult = null;
+}
+
+function saveTestSession() {
+    const sessionData = {
+        timestamp: new Date().toISOString(),
+        test_results: explorerData.test_results || [],
+        benchmarks: explorerData.benchmarks || []
+    };
+    
+    const blob = new Blob([JSON.stringify(sessionData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `model-explorer-session-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    DashboardUtils.showToast('Test session saved', 'success');
+}
+
+function exportComparison() {
+    DashboardUtils.showToast('Exporting comparison results...', 'info');
+}
+
+async function refreshModelData() {
+    DashboardUtils.showToast('Refreshing model data...', 'info');
+    await initializeModelExplorer();
+    DashboardUtils.showToast('Model data refreshed', 'success');
+}
+</script>
+{% endblock %}
