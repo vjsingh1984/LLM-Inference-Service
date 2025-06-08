@@ -373,9 +373,9 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
             status_response = health_check()
             status_data = status_response.get_json()
             
-            # Get active requests
+            # Get recent requests (active + last 10 completed)
             active_requests = []
-            for req_id, req_status in request_tracker.get_all_requests().items():
+            for req_status in request_tracker.get_recent_requests():
                 active_requests.append({
                     'request_id': req_status.request_id,
                     'status': req_status.status,

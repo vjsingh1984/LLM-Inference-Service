@@ -16,7 +16,8 @@
 import logging
 import threading
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, List
+from collections import deque
 
 from .schemas import InternalRequest, RequestStatus
 
@@ -28,6 +29,7 @@ class RequestTracker:
     
     def __init__(self, model_manager):
         self.active_requests: Dict[str, RequestStatus] = {}
+        self.completed_requests: deque = deque(maxlen=10)  # Keep last 10 completed requests
         self._lock = threading.Lock()
         self.model_manager = model_manager
 
@@ -90,6 +92,18 @@ class RequestTracker:
         """Get all active requests."""
         with self._lock:
             return self.active_requests.copy()
+    
+    def get_recent_requests(self) -> List[RequestStatus]:
+        """Get active requests plus last 10 completed requests for display."""
+        with self._lock:
+            # Combine active requests with recent completed requests
+            recent_requests = list(self.active_requests.values())
+            recent_requests.extend(list(self.completed_requests))
+            
+            # Sort by start_time, most recent first
+            recent_requests.sort(key=lambda x: x.start_time, reverse=True)
+            
+            return recent_requests[:20]  # Limit to 20 total for display
 
     def remove_completed(self, older_than_seconds: int = 300) -> int:
         """Remove completed requests older than specified seconds."""
