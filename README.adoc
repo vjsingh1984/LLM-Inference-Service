@@ -6,7 +6,6 @@
 :source-highlighter: rouge
 :experimental:
 :imagesdir: images
-:diagramsdir: diagrams
 
 == Overview
 
@@ -83,23 +82,23 @@ This documentation is organized into focused sections:
 
 == Architecture
 
-include::docs/architecture.adoc[leveloffset=+1]
+include::docs/architecture.adoc[]
 
 == Features
 
-include::docs/features.adoc[leveloffset=+1]
+include::docs/features.adoc[]
 
 == API Reference
 
-include::docs/api-reference.adoc[leveloffset=+1]
+include::docs/api-reference.adoc[]
 
 == Deployment
 
-include::docs/deployment.adoc[leveloffset=+1]
+include::docs/deployment.adoc[]
 
 == Monitoring
 
-include::docs/monitoring.adoc[leveloffset=+1]
+include::docs/monitoring.adoc[]
 
 == Quick Start
 

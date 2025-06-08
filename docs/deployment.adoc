@@ -1,12 +1,8 @@
-= Deployment Guide
-:toc:
-:toclevels: 3
-
-== Overview
+=== Overview
 
 This guide covers deployment options for the LLM Inference Service in production environments.
 
-== System Requirements
+=== System Requirements
 
 === Hardware Requirements
 
@@ -44,10 +40,10 @@ This guide covers deployment options for the LLM Inference Service in production
 * Docker 20.10+ (optional)
 * SystemD (for service deployment)
 
-== Deployment Architecture
+=== Deployment Architecture
 
 .Deployment Options Overview
-image::../diagrams/deployment-options.png[Deployment Options,800,600]
+image::images/deployment-options.png[Deployment Options,800,600]
 
 The service supports multiple deployment patterns:
 
@@ -56,7 +52,7 @@ The service supports multiple deployment patterns:
 * **High Availability**: Multi-instance setup with load balancing
 * **Cloud-Native**: Kubernetes deployment for scalable cloud environments
 
-== SystemD Service Deployment
+=== SystemD Service Deployment
 
 === Installation Steps
 
@@ -157,7 +153,7 @@ systemctl --user restart llm-inference
 systemctl --user stop llm-inference
 ----
 
-== Docker Deployment
+=== Docker Deployment
 
 === Building the Image
 
@@ -246,10 +242,10 @@ docker-compose logs -f
 docker-compose down
 ----
 
-== High Availability Setup
+=== High Availability Setup
 
 .High Availability Architecture
-image::../diagrams/ha-architecture.png[HA Architecture,800,600]
+image::images/ha-architecture.png[HA Architecture,800,600]
 
 === HAProxy Configuration
 
@@ -292,7 +288,7 @@ backend llm_backend
 * Timeout: 5 seconds
 * Failure threshold: 3 consecutive failures
 
-== Security Considerations
+=== Security Considerations
 
 === Network Security
 
@@ -342,7 +338,7 @@ def require_api_key(f):
     return decorated_function
 ----
 
-== Monitoring Setup
+=== Monitoring Setup
 
 === Prometheus Configuration
 
@@ -368,7 +364,7 @@ Import the provided dashboard JSON from `monitoring/grafana-dashboard.json` for:
 * Model performance metrics
 * System resource usage
 
-== Backup and Recovery
+=== Backup and Recovery
 
 === Backup Strategy
 
@@ -399,7 +395,7 @@ echo "Backup completed: $BACKUP_DIR/*_$DATE"
 3. Verify model availability
 4. Test API endpoints
 
-== Troubleshooting
+=== Troubleshooting
 
 === Common Issues
 
@@ -441,7 +437,7 @@ log_level: DEBUG
 python -m ollama_server.main --debug --port 11435
 ----
 
-== Performance Tuning
+=== Performance Tuning
 
 === GPU Optimization
 
@@ -471,7 +467,7 @@ request_timeout: 1800
 max_concurrent_requests: 10  # Adjust based on GPU memory
 ----
 
-== Production Checklist
+=== Production Checklist
 
 === Pre-Deployment
 - [ ] Hardware requirements verified

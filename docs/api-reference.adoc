@@ -1,26 +1,22 @@
-= API Reference
-:toc:
-:toclevels: 3
-
-== Overview
+=== Overview
 
 The LLM Inference Service provides multiple API endpoints compatible with various AI service providers. All endpoints support both streaming and non-streaming responses.
 
-== Authentication
+=== Authentication
 
 Currently, the service does not require authentication. In production deployments, implement appropriate authentication mechanisms.
 
-== Base URL
+=== Base URL
 
 ```
 http://localhost:11435
 ```
 
-== Chat Completion APIs
+=== Chat Completion APIs
 
 === OpenAI Compatible
 
-==== Create Chat Completion
+===== Create Chat Completion
 
 [source,http]
 ----
@@ -73,7 +69,7 @@ Content-Type: application/json
 
 === Ollama Compatible
 
-==== Generate Completion
+===== Generate Completion
 
 [source,http]
 ----
@@ -92,7 +88,7 @@ Content-Type: application/json
 }
 ----
 
-==== Chat Completion
+===== Chat Completion
 
 [source,http]
 ----
@@ -113,7 +109,7 @@ Content-Type: application/json
 
 === vLLM Compatible
 
-==== Create Completion
+===== Create Completion
 
 [source,http]
 ----
@@ -135,7 +131,7 @@ Content-Type: application/json
 
 === HuggingFace TGI Compatible
 
-==== Generate Text
+===== Generate Text
 
 [source,http]
 ----
@@ -152,7 +148,7 @@ Content-Type: application/json
 }
 ----
 
-== Model Management APIs
+=== Model Management APIs
 
 === List Models
 
@@ -220,7 +216,7 @@ Content-Type: application/json
 }
 ----
 
-== Monitoring APIs
+=== Monitoring APIs
 
 === Health Check
 
@@ -319,7 +315,7 @@ GET /api/metrics/apis
 GET /api/metrics/optimization
 ----
 
-== Configuration APIs
+=== Configuration APIs
 
 === Update Configuration
 
@@ -349,7 +345,7 @@ POST /api/dashboard/weight-distribution
 }
 ----
 
-== Progress Tracking
+=== Progress Tracking
 
 === Get Request Progress
 
@@ -365,7 +361,7 @@ GET /api/progress/{request_id}
 POST /api/dismiss/{request_id}
 ----
 
-== Response Formats
+=== Response Formats
 
 === Streaming Responses
 
@@ -393,11 +389,11 @@ data: [DONE]
 }
 ----
 
-== Rate Limiting
+=== Rate Limiting
 
 Currently no rate limiting is implemented. In production, implement appropriate rate limiting based on your requirements.
 
-== Best Practices
+=== Best Practices
 
 1. **Model Selection**: Use the `/api/models` endpoint to discover available models before making requests
 2. **Context Limits**: Check model capabilities with `/api/show` to understand context window sizes

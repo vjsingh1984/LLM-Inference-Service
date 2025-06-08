@@ -1,15 +1,11 @@
-= Architecture Documentation
-:toc:
-:toclevels: 3
-
-== System Architecture
+=== System Architecture
 
 The LLM Inference Service follows a modular architecture with clear separation of concerns:
 
 === Core Components
 
 .System Architecture Overview
-image::../diagrams/architecture-overview.png[Architecture Overview,800,600]
+image::images/architecture-overview.png[Architecture Overview,800,600]
 
 The service is organized into distinct layers:
 
@@ -22,7 +18,7 @@ The service is organized into distinct layers:
 === Component Interactions
 
 .Data Flow Through System Components  
-image::../diagrams/data-flow.png[Data Flow,800,600]
+image::images/data-flow.png[Data Flow,800,600]
 
 The request processing flow follows these key stages:
 
@@ -37,7 +33,7 @@ The request processing flow follows these key stages:
 === Deployment Architecture
 
 .Production Deployment Architecture
-image::../diagrams/deployment-architecture.png[Deployment Architecture,800,600]
+image::images/deployment-architecture.png[Deployment Architecture,800,600]
 
 The deployment follows a production-ready pattern:
 
@@ -47,7 +43,7 @@ The deployment follows a production-ready pattern:
 * **Network Security**: Firewall and load balancer integration
 * **Client Access**: Support for web, API, and CLI interfaces
 
-== Technical Design Patterns
+=== Technical Design Patterns
 
 === Adapter Pattern
 Used for multi-API compatibility, allowing seamless support for different AI service formats.
@@ -61,7 +57,7 @@ Applied in model selection and execution strategies based on workload characteri
 === Factory Pattern
 Used for creating appropriate adapters and executors based on request types.
 
-== Component Details
+=== Component Details
 
 === API Gateway Layer
 - **Flask API Server**: Main HTTP server handling all requests

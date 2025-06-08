@@ -1,15 +1,11 @@
-= Monitoring & Operations Guide
-:toc:
-:toclevels: 3
-
-== Overview
+=== Overview
 
 The LLM Inference Service provides comprehensive monitoring capabilities for production deployments.
 
-== Monitoring Architecture
+=== Monitoring Architecture
 
 .Monitoring System Architecture
-image::../diagrams/monitoring-architecture.png[Monitoring Architecture,800,600]
+image::images/monitoring-architecture.png[Monitoring Architecture,800,600]
 
 The monitoring system consists of:
 
@@ -19,14 +15,14 @@ The monitoring system consists of:
 * **Storage**: Time-series database for metrics and log storage
 * **Alerting**: Automated alert management and notifications
 
-== Web Dashboard
+=== Web Dashboard
 
 === Dashboard Overview
 
 The service includes a comprehensive web dashboard accessible at `http://localhost:11435/dashboard`.
 
 .Dashboard Pages Architecture
-image::../diagrams/dashboard-pages.png[Dashboard Pages,700,500]
+image::images/dashboard-pages.png[Dashboard Pages,700,500]
 
 **Dashboard Features:**
 * **15-second auto-refresh** to prevent API overload
@@ -73,12 +69,12 @@ image::../diagrams/dashboard-pages.png[Dashboard Pages,700,500]
 |Real-time
 |===
 
-== Production Monitoring
+=== Production Monitoring
 
 === Health Score Calculation
 
 .Health Score Calculation Flow
-image::../diagrams/health-score.png[Health Score,600,400]
+image::images/health-score.png[Health Score,600,400]
 
 **Scoring Components:**
 * **CPU Score**: 100 - CPU utilization percentage
@@ -129,7 +125,7 @@ alerts:
 === Alert Types
 
 .Alert Processing Flow
-image::../diagrams/alert-flow.png[Alert Flow,600,500]
+image::images/alert-flow.png[Alert Flow,600,500]
 
 **Alert Lifecycle:**
 1. **Metric Collection**: Continuous monitoring of system metrics
@@ -192,7 +188,7 @@ image::../diagrams/alert-flow.png[Alert Flow,600,500]
 |Throttle or shutdown
 |===
 
-== API Monitoring
+=== API Monitoring
 
 === Endpoint Metrics
 
@@ -222,7 +218,7 @@ Track performance for each API endpoint:
 === Performance Tracking
 
 .Performance Tracking Flow
-image::../diagrams/performance-tracking.png[Performance Tracking,700,500]
+image::images/performance-tracking.png[Performance Tracking,700,500]
 
 **Tracking Process:**
 1. **Request Initiation**: Client sends request to API gateway
@@ -231,7 +227,7 @@ image::../diagrams/performance-tracking.png[Performance Tracking,700,500]
 4. **Metrics Calculation**: Calculate response time, success/failure, token count
 5. **Dashboard Update**: Real-time dashboard updates with latest metrics
 
-== Log Management
+=== Log Management
 
 === Log Structure
 
@@ -296,12 +292,12 @@ Configure log rotation in `/etc/logrotate.d/llm-inference`:
 }
 ----
 
-== Performance Optimization
+=== Performance Optimization
 
 === Monitoring-Based Optimization
 
 .Optimization Decision Flow
-image::../diagrams/optimization-flow.png[Optimization Flow,600,400]
+image::images/optimization-flow.png[Optimization Flow,600,400]
 
 **Optimization Logic:**
 * **Low GPU Utilization (<50%)**: Increase batch size for better throughput
@@ -317,7 +313,7 @@ image::../diagrams/optimization-flow.png[Optimization Flow,600,400]
 4. **Reliability**: Success rate percentage
 5. **Scalability**: Concurrent request capacity
 
-== Alerting Integration
+=== Alerting Integration
 
 === Webhook Configuration
 
@@ -349,7 +345,7 @@ email:
     - "on-call@example.com"
 ----
 
-== Grafana Integration
+=== Grafana Integration
 
 === Prometheus Metrics Export
 
@@ -381,7 +377,7 @@ Import `monitoring/grafana-dashboard.json` for pre-configured panels:
 * System resource usage
 * Alert history
 
-== Troubleshooting with Monitoring
+=== Troubleshooting with Monitoring
 
 === Performance Issues
 
@@ -413,7 +409,7 @@ Import `monitoring/grafana-dashboard.json` for pre-configured panels:
 |Check system logs and dmesg
 |===
 
-== Monitoring Best Practices
+=== Monitoring Best Practices
 
 === Dashboard Usage
 * Monitor main dashboard for system overview
