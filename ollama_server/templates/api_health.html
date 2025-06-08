@@ -357,24 +357,42 @@ document.addEventListener('DOMContentLoaded', function() {
         sessionStorage.clear();
     }
     
-    initializeAPICharts();
-    initializeCompatibilityMatrix();
-    
-    // Force immediate refresh to get real data
-    console.log('Forcing immediate API health refresh...');
-    refreshAPIHealth().then(() => {
-        console.log('Initial refresh complete, starting auto-refresh...');
-        startAutoRefresh(refreshAPIHealth, 15000); // 15-second refresh for API health
-    }).catch(error => {
-        console.error('Initial API health refresh failed:', error);
-        startAutoRefresh(refreshAPIHealth, 15000);
-    });
+    // Wait for all elements to be ready before initializing
+    setTimeout(() => {
+        try {
+            initializeAPICharts();
+            initializeCompatibilityMatrix();
+            
+            // Force immediate refresh to get real data
+            console.log('Forcing immediate API health refresh...');
+            refreshAPIHealth().then(() => {
+                console.log('Initial refresh complete, starting auto-refresh...');
+                startAutoRefresh(refreshAPIHealth, 15000); // 15-second refresh for API health
+            }).catch(error => {
+                console.error('Initial API health refresh failed:', error);
+                showAPIError(error.message);
+                // Still try to start auto-refresh
+                startAutoRefresh(refreshAPIHealth, 15000);
+            });
+        } catch (error) {
+            console.error('Error during initialization:', error);
+            showAPIError('Failed to initialize dashboard: ' + error.message);
+        }
+    }, 100); // Small delay to ensure DOM is fully ready
 });
 
 function initializeAPICharts() {
-    // Response Time Chart
-    const responseCtx = document.getElementById('response-time-chart').getContext('2d');
-    responseTimeChart = new Chart(responseCtx, {
+    console.log('Initializing API charts...');
+    
+    try {
+        // Response Time Chart
+        const responseCanvas = document.getElementById('response-time-chart');
+        if (!responseCanvas) {
+            console.error('Response time chart canvas not found');
+            return;
+        }
+        const responseCtx = responseCanvas.getContext('2d');
+        responseTimeChart = new Chart(responseCtx, {
         type: 'line',
         data: {
             labels: [],
@@ -520,6 +538,12 @@ function initializeAPICharts() {
             }
         }
     });
+    
+    console.log('API charts initialized successfully');
+    } catch (error) {
+        console.error('Error initializing API charts:', error);
+        showAPIError('Failed to initialize charts: ' + error.message);
+    }
 }
 
 function initializeCompatibilityMatrix() {
@@ -768,39 +792,66 @@ function updateAPIMetricsTable(endpoints) {
 }
 
 function updateAPICharts(data) {
-    const timestamp = new Date().toLocaleTimeString();
-    
-    // Update response time chart
-    if (responseTimeChart.data.labels.length > 20) {
-        responseTimeChart.data.labels.shift();
-        responseTimeChart.data.datasets.forEach(dataset => dataset.data.shift());
+    try {
+        const timestamp = new Date().toLocaleTimeString();
+        
+        // Ensure data and data.endpoints exist
+        if (!data || !data.endpoints || !Array.isArray(data.endpoints)) {
+            console.warn('Invalid data structure for charts:', data);
+            return;
+        }
+        
+        // Update response time chart
+        if (responseTimeChart && responseTimeChart.data) {
+            if (responseTimeChart.data.labels.length > 20) {
+                responseTimeChart.data.labels.shift();
+                responseTimeChart.data.datasets.forEach(dataset => {
+                    if (dataset.data) dataset.data.shift();
+                });
+            }
+            
+            responseTimeChart.data.labels.push(timestamp);
+            data.endpoints.forEach((endpoint, index) => {
+                if (responseTimeChart.data.datasets[index] && responseTimeChart.data.datasets[index].data) {
+                    responseTimeChart.data.datasets[index].data.push(endpoint.responseTime || 0);
+                }
+            });
+            responseTimeChart.update('none');
+        }
+        
+        // Update distribution chart
+        if (distributionChart && distributionChart.data && distributionChart.data.datasets[0]) {
+            const requests = data.endpoints.map(e => e.requestsPerMin || 0);
+            distributionChart.data.datasets[0].data = requests;
+            distributionChart.update('none');
+        }
+        
+        // Update error rate chart
+        if (errorRateChart && errorRateChart.data && errorRateChart.data.datasets[0]) {
+            const errorRates = data.endpoints.map(e => e.errorRate || 0);
+            errorRateChart.data.datasets[0].data = errorRates;
+            errorRateChart.update('none');
+        }
+        
+        // Update throughput chart
+        if (throughputChart && throughputChart.data) {
+            const totalThroughput = data.endpoints.reduce((sum, e) => sum + (e.requestsPerMin || 0), 0);
+            if (throughputChart.data.labels.length > 20) {
+                throughputChart.data.labels.shift();
+                if (throughputChart.data.datasets[0] && throughputChart.data.datasets[0].data) {
+                    throughputChart.data.datasets[0].data.shift();
+                }
+            }
+            throughputChart.data.labels.push(timestamp);
+            if (throughputChart.data.datasets[0] && throughputChart.data.datasets[0].data) {
+                throughputChart.data.datasets[0].data.push(totalThroughput);
+            }
+            throughputChart.update('none');
+        }
+        
+    } catch (error) {
+        console.error('Error updating API charts:', error);
     }
-    
-    responseTimeChart.data.labels.push(timestamp);
-    data.endpoints.forEach((endpoint, index) => {
-        responseTimeChart.data.datasets[index].data.push(endpoint.responseTime);
-    });
-    responseTimeChart.update('none');
-    
-    // Update distribution chart
-    const requests = data.endpoints.map(e => e.requestsPerMin);
-    distributionChart.data.datasets[0].data = requests;
-    distributionChart.update('none');
-    
-    // Update error rate chart
-    const errorRates = data.endpoints.map(e => e.errorRate);
-    errorRateChart.data.datasets[0].data = errorRates;
-    errorRateChart.update('none');
-    
-    // Update throughput chart
-    const totalThroughput = data.endpoints.reduce((sum, e) => sum + e.requestsPerMin, 0);
-    if (throughputChart.data.labels.length > 20) {
-        throughputChart.data.labels.shift();
-        throughputChart.data.datasets[0].data.shift();
-    }
-    throughputChart.data.labels.push(timestamp);
-    throughputChart.data.datasets[0].data.push(totalThroughput);
-    throughputChart.update('none');
 }
 
 function updateActivityLog(data) {

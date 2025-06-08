@@ -27,15 +27,18 @@ class OpenAIAdapter(RequestAdapter):
     """Adapter for OpenAI chat completion API format."""
     
     def __init__(self, model_manager: ModelManager, default_tensor_split: str = None):
-        self.model_manager = model_manager
-        self.default_tensor_split = default_tensor_split
+        super().__init__(model_manager, default_tensor_split)
     
     def parse_request(self, data: Dict[str, Any]) -> InternalRequest:
         """Parse OpenAI chat completion request."""
         messages = data.get('messages', [])
         model_name = data.get('model')
-        if not messages or not model_name:
-            raise ValueError("Missing required fields: messages and model")
+        if not messages:
+            raise ValueError("Missing required field: messages")
+        
+        # If no model specified, use the smallest available model
+        if not model_name:
+            model_name = self.get_smallest_model()
         
         prompt = self._messages_to_prompt(messages, model_name)
         model_info = self.model_manager.get_model_info(model_name)

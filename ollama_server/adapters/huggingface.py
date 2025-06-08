@@ -26,8 +26,7 @@ class HuggingFaceAdapter(RequestAdapter):
     """Adapter for HuggingFace Text Generation Inference (TGI) API format."""
     
     def __init__(self, model_manager: ModelManager, default_tensor_split: str = None):
-        self.model_manager = model_manager
-        self.default_tensor_split = default_tensor_split
+        super().__init__(model_manager, default_tensor_split)
 
     def parse_request(self, data: Dict[str, Any]) -> InternalRequest:
         """Parse HuggingFace TGI request."""
@@ -35,12 +34,8 @@ class HuggingFaceAdapter(RequestAdapter):
         model_name_req = data.get('model')  # TGI server usually knows its model
         
         model_name_to_use = model_name_req
-        if not model_name_to_use:  # If client doesn't specify, try to pick one
-            all_models = self.model_manager.build_model_mapping()
-            if all_models:
-                model_name_to_use = list(all_models.keys())[0]
-            else:
-                raise ValueError("No model specified in TGI request and no default available.")
+        if not model_name_to_use:  # If client doesn't specify, use the smallest available model
+            model_name_to_use = self.get_smallest_model()
         
         if not inputs:
             raise ValueError("Missing 'inputs' for HuggingFace TGI.")

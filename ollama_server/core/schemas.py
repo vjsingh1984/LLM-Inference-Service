@@ -59,7 +59,9 @@ class RequestStatus:
         """Calculate duration based on completion status"""
         if self.completion_time and self.status in ['completed', 'error']:
             return self.completion_time - self.start_time
-        return self.last_update - self.start_time
+        # For active requests, calculate live duration from current time
+        import time
+        return time.time() - self.start_time
     
     @property
     def total_tokens_per_second(self) -> float:

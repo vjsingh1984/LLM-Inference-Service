@@ -51,7 +51,8 @@ class APIMetricsTracker:
             "openai": APIEndpointMetrics("OpenAI API", "/v1/chat/completions"),
             "ollama_chat": APIEndpointMetrics("Ollama Chat", "/api/chat"),
             "ollama_generate": APIEndpointMetrics("Ollama Generate", "/api/generate"),
-            "vllm": APIEndpointMetrics("vLLM API", "/v1/completions"),
+            "vllm_chat": APIEndpointMetrics("vLLM Chat", "/v1/chat/completions"),
+            "vllm_completion": APIEndpointMetrics("vLLM Completion", "/v1/completions"),
             "huggingface": APIEndpointMetrics("HuggingFace TGI", "/generate")
         }
         
@@ -169,7 +170,8 @@ class APIMetricsTracker:
             "openai": "#10b981",
             "ollama_chat": "#f59e0b", 
             "ollama_generate": "#f59e0b",
-            "vllm": "#06b6d4",
+            "vllm_chat": "#06b6d4",
+            "vllm_completion": "#0ea5e9",
             "huggingface": "#ef4444"
         }
         return colors.get(endpoint_key, "#6b7280")

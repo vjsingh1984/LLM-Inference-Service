@@ -45,6 +45,45 @@ class RequestAdapter(ABC):
             logger.warning(f"Could not get accurate context size for {model_name}: {e}")
             return 4096  # Fallback
     
+    def get_smallest_model(self) -> str:
+        """Get the smallest available model for better compatibility."""
+        all_models = self.model_manager.build_model_mapping()
+        if not all_models:
+            raise ValueError("No models available")
+        
+        # Find the smallest model by looking for size indicators in model names
+        # Order: 1b < 1.1b < 1.5b < 2b < 3b < 7b < 8b < 12b < 13b < 14b < 22b < 30b < 33b < 70b < etc.
+        size_priorities = {
+            '1b': 1, '1.1b': 2, '1.5b': 3, 
+            '2b': 4, '3b': 5, '7b': 6, '8b': 7,
+            '12b': 8, '13b': 9, '14b': 10, '15b': 11,
+            '22b': 12, '27b': 13, '30b': 14, '33b': 15,
+            '70b': 16, '235b': 17, '671b': 18
+        }
+        
+        smallest_model = None
+        smallest_priority = float('inf')
+        
+        for model_name in all_models.keys():
+            model_lower = model_name.lower()
+            found_size = False
+            
+            # Check for size indicators in the model name
+            for size, priority in size_priorities.items():
+                if f':{size}' in model_lower or f'-{size}' in model_lower or f'{size}-' in model_lower:
+                    if priority < smallest_priority:
+                        smallest_priority = priority
+                        smallest_model = model_name
+                        found_size = True
+                    break
+            
+            # If no size found, assume it's small and give it low priority
+            if not found_size and smallest_priority == float('inf'):
+                smallest_model = model_name
+                smallest_priority = 99
+        
+        return smallest_model if smallest_model else list(all_models.keys())[0]
+    
     @abstractmethod
     def parse_request(self, data: Dict[str, Any]) -> InternalRequest:
         """Parse external API request into internal format."""

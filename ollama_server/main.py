@@ -20,6 +20,8 @@ from typing import Optional
 
 from flask import Flask
 
+__version__ = "1.0.0"
+
 from .config import parse_arguments
 from .utils.logging import setup_logging
 from .models.manager import ModelManager
@@ -95,7 +97,7 @@ def main():
         
         # Start the server
         logger.info("=" * 60)
-        logger.info("LLM Inference Service Starting")
+        logger.info(f"LLM Inference Service v{__version__} Starting")
         logger.info("=" * 60)
         logger.info(f"🚀 Server starting on http://{config.host}:{config.port}")
         logger.info(f"📊 Dashboard available at http://{config.host}:{config.port}/dashboard")

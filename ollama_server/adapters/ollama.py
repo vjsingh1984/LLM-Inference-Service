@@ -34,8 +34,12 @@ class OllamaChatAdapter(RequestAdapter):
         """Parse Ollama chat request."""
         messages = data.get('messages', [])
         model_name = data.get('model')
-        if not messages or not model_name:
-            raise ValueError("Missing required fields: messages and model")
+        if not messages:
+            raise ValueError("Missing required field: messages")
+        
+        # If no model specified, use the smallest available model
+        if not model_name:
+            model_name = self.get_smallest_model()
 
         # Reuse OpenAI's message parsing logic
         openai_adapter = OpenAIAdapter(self.model_manager, self.default_tensor_split)
@@ -88,8 +92,12 @@ class OllamaGenerateAdapter(RequestAdapter):
         """Parse Ollama generate request."""
         prompt = data.get('prompt', '')
         model_name = data.get('model')
-        if not prompt or not model_name:
-            raise ValueError("Missing prompt/model for Ollama generate.")
+        if not prompt:
+            raise ValueError("Missing prompt for Ollama generate.")
+        
+        # If no model specified, use the smallest available model
+        if not model_name:
+            model_name = self.get_smallest_model()
         
         model_info = self.model_manager.get_model_info(model_name)
         if not model_info:

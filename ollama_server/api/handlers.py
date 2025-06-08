@@ -50,7 +50,7 @@ class RequestHandler:
             def error_gen():
                 # Record failed request
                 response_time = (time.time() - start_time) * 1000
-                api_metrics.record_request(api_format, 'failure', response_time)
+                api_metrics.record_request(api_format, response_time, success=False)
                 yield "Error: LLM executor not available."
                 self.request_tracker.update_request(req_id, status='error', error="LLM executor not available.")
             return Response(stream_with_context(error_gen()), mimetype='text/plain', status=503)
@@ -117,7 +117,7 @@ class RequestHandler:
 
             # Record successful streaming request
             response_time = (time.time() - start_time) * 1000
-            api_metrics.record_request(api_format, 'success', response_time)
+            api_metrics.record_request(api_format, response_time, success=True)
             
             # Schedule cleanup
             self._schedule_cleanup(req_id)
@@ -143,7 +143,7 @@ class RequestHandler:
         if not self.llama_executor:
             # Record failed request
             response_time = (time.time() - start_time) * 1000
-            api_metrics.record_request(api_format, 'failure', response_time)
+            api_metrics.record_request(api_format, response_time, success=False)
             return jsonify({'error': 'LLM executor not available.'}), 503
 
         output, error_msg = self.llama_executor.execute_request_non_streaming(request_obj)
@@ -152,7 +152,7 @@ class RequestHandler:
             logger.error(f"[{req_id}] Non-streaming call to executor failed: {error_msg}. Output (if any): '{output[:100]}...'")
             # Record failed request
             response_time = (time.time() - start_time) * 1000
-            api_metrics.record_request(api_format, 'failure', response_time)
+            api_metrics.record_request(api_format, response_time, success=False)
             # API-specific error formatting
             err_resp_payload = {'error': error_msg}
             return jsonify(err_resp_payload), 500
@@ -175,7 +175,7 @@ class RequestHandler:
         
         # Record successful request
         response_time = (time.time() - start_time) * 1000
-        api_metrics.record_request(api_format, 'success', response_time)
+        api_metrics.record_request(api_format, response_time, success=True)
         
         # Schedule cleanup
         self._schedule_cleanup(req_id)

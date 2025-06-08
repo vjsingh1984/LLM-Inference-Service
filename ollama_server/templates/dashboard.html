@@ -485,52 +485,88 @@ function updateGPUPanels() {
     container.innerHTML = html;
 }
 
-function updateAPIEndpoints() {
+async function updateAPIEndpoints() {
     const container = document.getElementById('api-endpoints');
     
-    // TODO: Get real API endpoint status
-    const endpoints = [
-        { name: 'OpenAI API', path: '/v1/chat/completions', status: 'healthy', response_time: '45ms', requests: 127 },
-        { name: 'Ollama API', path: '/api/generate', status: 'healthy', response_time: '38ms', requests: 89 },
-        { name: 'vLLM API', path: '/v1/completions', status: 'healthy', response_time: '52ms', requests: 34 },
-        { name: 'HuggingFace API', path: '/generate', status: 'healthy', response_time: '67ms', requests: 12 }
-    ];
-    
-    let html = '';
-    endpoints.forEach(endpoint => {
-        const statusClass = endpoint.status === 'healthy' ? 'status-healthy' : 'status-error';
-        const cardClass = endpoint.name.toLowerCase().includes('openai') ? 'api-openai' :
-                         endpoint.name.toLowerCase().includes('ollama') ? 'api-ollama' :
-                         endpoint.name.toLowerCase().includes('vllm') ? 'api-vllm' : 'api-huggingface';
+    try {
+        // Fetch real API endpoint metrics
+        const response = await fetch('/api/metrics/apis?' + new Date().getTime(), {
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache'
+            }
+        });
         
-        html += `
-            <div class="col-md-6 mb-3">
-                <div class="card api-endpoint-card ${cardClass}">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-1">${endpoint.name}</h6>
-                                <small class="text-muted">${endpoint.path}</small>
+        if (!response.ok) {
+            throw new Error('Failed to fetch API metrics');
+        }
+        
+        const data = await response.json();
+        const endpoints = data.endpoints || [];
+        
+        let html = '';
+        endpoints.forEach(endpoint => {
+            // Determine status class based on endpoint status
+            const statusClass = endpoint.status === 'healthy' ? 'status-healthy' : 
+                               endpoint.status === 'warning' ? 'status-warning' : 
+                               endpoint.status === 'error' ? 'status-error' : 'status-healthy';
+            
+            // Determine card class based on API name
+            const cardClass = endpoint.name.toLowerCase().includes('openai') ? 'api-openai' :
+                             endpoint.name.toLowerCase().includes('ollama') ? 'api-ollama' :
+                             endpoint.name.toLowerCase().includes('vllm') ? 'api-vllm' : 'api-huggingface';
+            
+            // Format response time
+            let responseTimeDisplay = 'No data';
+            if (endpoint.responseTime > 0) {
+                if (endpoint.responseTime < 1000) {
+                    responseTimeDisplay = endpoint.responseTime + 'ms';
+                } else if (endpoint.responseTime < 60000) {
+                    responseTimeDisplay = (endpoint.responseTime / 1000).toFixed(1) + 's';
+                } else {
+                    responseTimeDisplay = (endpoint.responseTime / 60000).toFixed(1) + 'm';
+                }
+            }
+            
+            // Format request count
+            let requestDisplay = endpoint.requestsPerMin > 0 ? 
+                                `${endpoint.requestsPerMin}/min` : 
+                                'No requests';
+            
+            html += `
+                <div class="col-md-6 mb-3">
+                    <div class="card api-endpoint-card ${cardClass}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title mb-1">${endpoint.name}</h6>
+                                    <small class="text-muted">${endpoint.path}</small>
+                                </div>
+                                <span class="status-indicator ${statusClass}"></span>
                             </div>
-                            <span class="status-indicator ${statusClass}"></span>
-                        </div>
-                        <div class="row mt-2">
-                            <div class="col-6">
-                                <small class="text-muted">Response Time</small><br>
-                                <strong>${responseTimeDisplay}</strong>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-muted">Requests</small><br>
-                                <strong>${requestDisplay}</strong>
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <small class="text-muted">Response Time</small><br>
+                                    <strong>${responseTimeDisplay}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Requests</small><br>
+                                    <strong>${requestDisplay}</strong>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
+            `;
+        });
+        
+        container.innerHTML = html || '<div class="col-12 text-center text-muted">No API endpoint data available</div>';
+        
+    } catch (error) {
+        console.error('Error fetching API metrics:', error);
+        container.innerHTML = '<div class="col-12 text-center text-danger">Failed to load API metrics</div>';
+    }
 }
 
 function updateActiveRequests() {

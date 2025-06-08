@@ -28,14 +28,15 @@ class VLLMAdapter(RequestAdapter):
     """Adapter for vLLM API format (supports both chat and completion)."""
     
     def __init__(self, model_manager: ModelManager, default_tensor_split: str = None):
-        self.model_manager = model_manager
-        self.default_tensor_split = default_tensor_split
+        super().__init__(model_manager, default_tensor_split)
 
     def parse_request(self, data: Dict[str, Any]) -> InternalRequest:
         """Parse vLLM request (chat or completion)."""
         model_name = data.get('model')
+        
+        # If no model specified, use the smallest available model
         if not model_name:
-            raise ValueError("Missing 'model' for vLLM request.")
+            model_name = self.get_smallest_model()
         
         api_format_type = ''
         prompt_str = ''
