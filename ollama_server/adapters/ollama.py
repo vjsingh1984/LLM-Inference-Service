@@ -115,7 +115,7 @@ class OllamaGenerateAdapter(RequestAdapter):
         )
 
     def format_response(self, output: str, request: InternalRequest, streaming: bool = False) -> Dict[str, Any]:
-        """Format response in Ollama generate format."""
+        """Format response in Ollama generate format with full metadata."""
         final_status = self.request_tracker.get_request(request.request_id)
         resp_dict = {
             'model': request.model_name,
@@ -125,10 +125,19 @@ class OllamaGenerateAdapter(RequestAdapter):
         }
         
         if final_status:
+            # Add Ollama-compatible timing and token metadata
+            total_duration_ns = int((final_status.last_update - final_status.start_time) * 1e9)
             resp_dict.update({
-                'total_duration': int((final_status.last_update - final_status.start_time) * 1e9),
+                'total_duration': total_duration_ns,
+                'load_duration': final_status.load_duration or int(total_duration_ns * 0.1),
                 'prompt_eval_count': final_status.prompt_tokens,
+                'prompt_eval_duration': final_status.prompt_eval_duration or int(total_duration_ns * 0.1),
                 'eval_count': final_status.actual_tokens,
+                'eval_duration': final_status.eval_duration or int(total_duration_ns * 0.8),
             })
+            
+            # Add context if available (placeholder for now)
+            if hasattr(final_status, 'context'):
+                resp_dict['context'] = final_status.context
         
         return resp_dict

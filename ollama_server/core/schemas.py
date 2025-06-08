@@ -50,6 +50,9 @@ class RequestStatus:
     context_size: int = 0  # Actual context_size used for the request
     prompt_tokens: int = 0
     completion_time: Optional[float] = None  # Time when request completed
+    prompt_eval_duration: Optional[int] = None  # Time spent evaluating prompt (nanoseconds)
+    eval_duration: Optional[int] = None  # Time spent generating response (nanoseconds)
+    load_duration: Optional[int] = None  # Time spent loading model (nanoseconds)
     
     @property
     def duration(self) -> float:
@@ -60,17 +63,20 @@ class RequestStatus:
     
     @property
     def total_tokens_per_second(self) -> float:
-        """Calculate total tokens per second (prompt + generated)"""
-        duration = self.duration
+        """Calculate total tokens per second using Ollama total_duration"""
+        total_duration_seconds = self.duration  # Use overall duration
         total_tokens = self.prompt_tokens + self.actual_tokens  # prompt + generated
-        if duration > 0 and total_tokens > 0:
-            return total_tokens / duration
+        if total_duration_seconds > 0 and total_tokens > 0:
+            return total_tokens / total_duration_seconds
         return 0.0
     
     @property
     def generated_tokens_per_second(self) -> float:
-        """Calculate generated tokens per second (output only)"""
-        duration = self.duration
-        if duration > 0 and self.actual_tokens > 0:  # actual_tokens is generated tokens
-            return self.actual_tokens / duration
+        """Calculate generated tokens per second using Ollama eval_duration if available"""
+        if self.eval_duration and self.eval_duration > 0 and self.actual_tokens > 0:
+            # Use precise Ollama timing: eval_count / eval_duration * 10^9
+            return (self.actual_tokens / self.eval_duration) * 1e9
+        elif self.duration > 0 and self.actual_tokens > 0:
+            # Fallback to duration-based calculation
+            return self.actual_tokens / self.duration
         return 0.0

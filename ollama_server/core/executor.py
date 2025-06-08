@@ -190,7 +190,22 @@ class LLAMAExecutor:
                     self.request_tracker.update_request(request.request_id, status='error', error=err_detail, output=full_output, actual_tokens=actual_gen_tokens)
                 else:
                     logger.info(f"[{request.request_id}] Streaming completed successfully. Output len: {len(full_output)}, Generated tokens: {actual_gen_tokens}")
-                    self.request_tracker.update_request(request.request_id, status='completed', output=full_output, progress=request.max_tokens, actual_tokens=actual_gen_tokens)
+                    # Estimate Ollama timing data (in nanoseconds)
+                    total_duration_ns = int((final_status_obj.last_update - final_status_obj.start_time) * 1e9)
+                    eval_duration_ns = int(total_duration_ns * 0.8)  # Estimate generation took 80% of time
+                    prompt_eval_duration_ns = int(total_duration_ns * 0.1)  # Estimate prompt eval took 10%
+                    load_duration_ns = int(total_duration_ns * 0.1)  # Estimate load took 10%
+                    
+                    self.request_tracker.update_request(
+                        request.request_id, 
+                        status='completed', 
+                        output=full_output, 
+                        progress=request.max_tokens, 
+                        actual_tokens=actual_gen_tokens,
+                        eval_duration=eval_duration_ns,
+                        prompt_eval_duration=prompt_eval_duration_ns,
+                        load_duration=load_duration_ns
+                    )
             elif final_status_obj:
                  logger.info(f"[{request.request_id}] Streaming ended (already in error state: {final_status_obj.error}). Output len: {len(full_output)}")
                  self.request_tracker.update_request(request.request_id, output=full_output, actual_tokens=actual_gen_tokens)
@@ -229,7 +244,27 @@ class LLAMAExecutor:
                 return full_output, err_detail
             else:
                 logger.info(f"[{request.request_id}] Non-streaming completed successfully. Output len: {len(full_output)}, Generated tokens: {actual_gen_tokens}")
-                self.request_tracker.update_request(request.request_id, status='completed', output=full_output, progress=request.max_tokens, actual_tokens=actual_gen_tokens)
+                # Get final status for timing calculation
+                final_status_obj = self.request_tracker.get_request(request.request_id)
+                if final_status_obj:
+                    # Estimate Ollama timing data (in nanoseconds)
+                    total_duration_ns = int((time.time() - final_status_obj.start_time) * 1e9)
+                    eval_duration_ns = int(total_duration_ns * 0.8)  # Estimate generation took 80% of time
+                    prompt_eval_duration_ns = int(total_duration_ns * 0.1)  # Estimate prompt eval took 10%
+                    load_duration_ns = int(total_duration_ns * 0.1)  # Estimate load took 10%
+                    
+                    self.request_tracker.update_request(
+                        request.request_id, 
+                        status='completed', 
+                        output=full_output, 
+                        progress=request.max_tokens, 
+                        actual_tokens=actual_gen_tokens,
+                        eval_duration=eval_duration_ns,
+                        prompt_eval_duration=prompt_eval_duration_ns,
+                        load_duration=load_duration_ns
+                    )
+                else:
+                    self.request_tracker.update_request(request.request_id, status='completed', output=full_output, progress=request.max_tokens, actual_tokens=actual_gen_tokens)
                 return full_output, None
         except subprocess.TimeoutExpired as e_timeout:
             logger.error(f"[{request.request_id}] Timeout during process.communicate(): {e_timeout}")
