@@ -49,3 +49,19 @@ class RequestStatus:
     actual_tokens: int = 0
     context_size: int = 0  # Actual context_size used for the request
     prompt_tokens: int = 0
+    completion_time: Optional[float] = None  # Time when request completed
+    
+    @property
+    def duration(self) -> float:
+        """Calculate duration based on completion status"""
+        if self.completion_time and self.status in ['completed', 'error']:
+            return self.completion_time - self.start_time
+        return self.last_update - self.start_time
+    
+    @property
+    def tokens_per_second(self) -> float:
+        """Calculate tokens per second throughput"""
+        duration = self.duration
+        if duration > 0 and self.actual_tokens > 0:
+            return self.actual_tokens / duration
+        return 0.0

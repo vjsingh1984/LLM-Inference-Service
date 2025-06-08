@@ -60,9 +60,16 @@ class RequestTracker:
         """Update request status."""
         with self._lock:
             if request_id in self.active_requests:
+                request_status = self.active_requests[request_id]
+                
+                # Check if status is being updated to completed or error
+                if 'status' in kwargs and kwargs['status'] in ['completed', 'error']:
+                    if not request_status.completion_time:
+                        kwargs['completion_time'] = time.time()
+                
                 for key, value in kwargs.items():
-                    setattr(self.active_requests[request_id], key, value)
-                self.active_requests[request_id].last_update = time.time()
+                    setattr(request_status, key, value)
+                request_status.last_update = time.time()
             else:
                 logger.warning(f"[{request_id}] Update attempt for non-existent request in tracker.")
     

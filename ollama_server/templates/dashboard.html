@@ -205,11 +205,12 @@
                                         <th>Progress</th>
                                         <th>Start Time</th>
                                         <th>Duration</th>
+                                        <th>Throughput</th>
                                     </tr>
                                 </thead>
                                 <tbody id="requests-table-body">
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted">
+                                        <td colspan="8" class="text-center text-muted">
                                             No active requests
                                         </td>
                                     </tr>
@@ -538,7 +539,7 @@ function updateActiveRequests() {
     if (requests.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center text-muted">No active requests</td>
+                <td colspan="8" class="text-center text-muted">No active requests</td>
             </tr>
         `;
         return;
@@ -547,10 +548,29 @@ function updateActiveRequests() {
     let html = '';
     requests.forEach(req => {
         const statusClass = req.status === 'error' ? 'bg-danger' : 
-                           req.status === 'generating' ? 'bg-warning' : 'bg-success';
+                           req.status === 'completed' ? 'bg-success' :
+                           req.status === 'generating' ? 'bg-warning' : 'bg-info';
         
         const startTime = new Date(req.start_time * 1000);
-        const duration = Math.round((Date.now() - startTime.getTime()) / 1000);
+        
+        // Use static duration for completed requests, live duration for active ones
+        let durationDisplay;
+        if (req.status === 'completed' || req.status === 'error') {
+            durationDisplay = `${Math.round(req.duration)}s`;
+        } else {
+            const liveDuration = Math.round((Date.now() - startTime.getTime()) / 1000);
+            durationDisplay = `${liveDuration}s`;
+        }
+        
+        // Format throughput
+        let throughputDisplay = '';
+        if (req.tokens_per_second > 0) {
+            throughputDisplay = `${req.tokens_per_second.toFixed(1)} tok/s`;
+        } else if (req.status === 'completed' || req.status === 'error') {
+            throughputDisplay = '0.0 tok/s';
+        } else {
+            throughputDisplay = '-';
+        }
         
         html += `
             <tr>
@@ -566,7 +586,8 @@ function updateActiveRequests() {
                     </div>
                 </td>
                 <td>${startTime.toLocaleTimeString()}</td>
-                <td>${duration}s</td>
+                <td>${durationDisplay}</td>
+                <td><small class="text-muted">${throughputDisplay}</small></td>
             </tr>
         `;
     });

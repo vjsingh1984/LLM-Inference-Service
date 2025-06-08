@@ -383,6 +383,9 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
                     'progress': req_status.progress,
                     'total': req_status.total,
                     'start_time': req_status.start_time,
+                    'duration': req_status.duration,
+                    'tokens_per_second': req_status.tokens_per_second,
+                    'actual_tokens': req_status.actual_tokens,
                     'api_format': getattr(req_status, 'api_format', 'unknown')
                 })
             
