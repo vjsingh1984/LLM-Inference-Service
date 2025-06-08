@@ -542,17 +542,39 @@ function getCompatibilityIcon(supported) {
 
 async function refreshAPIHealth() {
     try {
-        // Fetch real API metrics from the server
-        const response = await fetch('/api/metrics/apis');
-        if (!response.ok) throw new Error('Failed to fetch API metrics');
+        console.log('Fetching fresh API health data...');
+        
+        // Fetch real API metrics from the server with cache busting
+        const response = await fetch('/api/metrics/apis?' + new Date().getTime(), {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
         const realData = await response.json();
+        console.log('API health data received:', realData);
         apiHealthData = realData;
         
-        updateAPIStatusCards(realData.endpoints);
-        updateAPIMetricsTable(realData.endpoints);
-        updateAPICharts(realData);
-        updateActivityLog(realData);
+        if (realData.endpoints && realData.endpoints.length > 0) {
+            updateAPIStatusCards(realData.endpoints);
+            updateAPIMetricsTable(realData.endpoints);
+            updateAPICharts(realData);
+            updateActivityLog(realData);
+            
+            // Add debugging info to the console
+            console.log('Endpoint data details:');
+            realData.endpoints.forEach(ep => {
+                console.log(`${ep.name}: ${ep.responseTime}ms, ${ep.requestsPerMin} req/min, ${ep.successRate}% success`);
+            });
+            
+            console.log('API health display updated successfully');
+        } else {
+            console.warn('No endpoint data received');
+            showAPIError('No API endpoint data available');
+        }
         
     } catch (error) {
         console.error('Error refreshing API health:', error);
@@ -562,16 +584,24 @@ async function refreshAPIHealth() {
 
 
 function updateAPIStatusCards(endpoints) {
+    console.log('Updating API status cards with endpoints:', endpoints);
     const container = document.getElementById('api-status-cards');
     
     let html = '';
     endpoints.forEach(endpoint => {
+        console.log(`Processing endpoint: ${endpoint.name} - ${endpoint.responseTime}ms, ${endpoint.requestsPerMin} req/min`);
+        
         const statusIcon = endpoint.status === 'healthy' ? 'check-circle' : 
                           endpoint.status === 'warning' ? 'exclamation-triangle' : 'x-circle';
         const statusColor = endpoint.status === 'healthy' ? 'success' : 
                            endpoint.status === 'warning' ? 'warning' : 'danger';
         const cardBorder = endpoint.status === 'healthy' ? 'border-success' : 
                           endpoint.status === 'warning' ? 'border-warning' : 'border-danger';
+        
+        // Format response time for display
+        const responseTimeDisplay = endpoint.responseTime > 0 ? 
+            (endpoint.responseTime < 1000 ? `${endpoint.responseTime}ms` : `${(endpoint.responseTime/1000).toFixed(1)}s`) : 
+            'No data';
         
         html += `
             <div class="col-md-6 col-lg-3 mb-3">
@@ -588,12 +618,12 @@ function updateAPIStatusCards(endpoints) {
                         <div class="row text-center">
                             <div class="col-6">
                                 <div class="border-end">
-                                    <div class="h5 mb-0">${endpoint.responseTime}ms</div>
+                                    <div class="h5 mb-0">${responseTimeDisplay}</div>
                                     <small class="text-muted">Response</small>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="h5 mb-0">${endpoint.successRate}%</div>
+                                <div class="h5 mb-0">${endpoint.successRate > 0 ? endpoint.successRate + '%' : 'No data'}</div>
                                 <small class="text-muted">Success</small>
                             </div>
                         </div>
@@ -601,7 +631,13 @@ function updateAPIStatusCards(endpoints) {
                         <div class="mt-3">
                             <div class="progress" style="height: 4px;">
                                 <div class="progress-bar bg-${statusColor}" 
-                                     style="width: ${endpoint.successRate}%"></div>
+                                     style="width: ${Math.max(endpoint.successRate, 0)}%"></div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> 
+                                    ${endpoint.requestsPerMin > 0 ? endpoint.requestsPerMin + ' req/min' : 'No requests'}
+                                </small>
                             </div>
                         </div>
                     </div>
