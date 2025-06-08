@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}API Health Monitor - LLM Inference Service{% endblock %}
+{% block title %}API Health Monitor - LLM Inference Service v2.0{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -12,6 +12,7 @@
                     <i class="bi bi-cloud-check"></i>
                     API Endpoints Health Status
                     <span class="badge bg-success ms-2 real-time-indicator">Live Monitoring</span>
+                    <span class="badge bg-info ms-2">v2.0 - Real Data Only</span>
                 </h4>
             </div>
             <div class="card-body">
@@ -348,9 +349,26 @@ let activityLog = [];
 
 // Initialize API health monitor
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing API health monitor...');
+    
+    // Clear any cached data
+    if (typeof(Storage) !== 'undefined') {
+        localStorage.removeItem('apiHealthData');
+        sessionStorage.clear();
+    }
+    
     initializeAPICharts();
     initializeCompatibilityMatrix();
-    startAutoRefresh(refreshAPIHealth, 15000); // 15-second refresh for API health
+    
+    // Force immediate refresh to get real data
+    console.log('Forcing immediate API health refresh...');
+    refreshAPIHealth().then(() => {
+        console.log('Initial refresh complete, starting auto-refresh...');
+        startAutoRefresh(refreshAPIHealth, 15000); // 15-second refresh for API health
+    }).catch(error => {
+        console.error('Initial API health refresh failed:', error);
+        startAutoRefresh(refreshAPIHealth, 15000);
+    });
 });
 
 function initializeAPICharts() {
@@ -544,12 +562,15 @@ async function refreshAPIHealth() {
     try {
         console.log('Fetching fresh API health data...');
         
-        // Fetch real API metrics from the server with cache busting
-        const response = await fetch('/api/metrics/apis?' + new Date().getTime(), {
-            cache: 'no-cache',
+        // Fetch real API metrics from the server with aggressive cache busting
+        const cacheBuster = new Date().getTime() + Math.random();
+        const response = await fetch(`/api/metrics/apis?v=${cacheBuster}&nocache=${Date.now()}`, {
+            method: 'GET',
+            cache: 'no-store',
             headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             }
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -584,12 +605,22 @@ async function refreshAPIHealth() {
 
 
 function updateAPIStatusCards(endpoints) {
-    console.log('Updating API status cards with endpoints:', endpoints);
+    console.log('=== updateAPIStatusCards called ===');
+    console.log('Received endpoints:', JSON.stringify(endpoints, null, 2));
     const container = document.getElementById('api-status-cards');
+    
+    if (!container) {
+        console.error('Container api-status-cards not found!');
+        return;
+    }
     
     let html = '';
     endpoints.forEach(endpoint => {
-        console.log(`Processing endpoint: ${endpoint.name} - ${endpoint.responseTime}ms, ${endpoint.requestsPerMin} req/min`);
+        console.log(`Processing endpoint: ${endpoint.name}`);
+        console.log(`  - Response Time: ${endpoint.responseTime}ms`);
+        console.log(`  - Requests/Min: ${endpoint.requestsPerMin}`);
+        console.log(`  - Success Rate: ${endpoint.successRate}%`);
+        console.log(`  - Status: ${endpoint.status}`);
         
         const statusIcon = endpoint.status === 'healthy' ? 'check-circle' : 
                           endpoint.status === 'warning' ? 'exclamation-triangle' : 'x-circle';
@@ -646,7 +677,42 @@ function updateAPIStatusCards(endpoints) {
         `;
     });
     
+    console.log('Setting innerHTML with:', html.substring(0, 200) + '...');
     container.innerHTML = html;
+    console.log('=== updateAPIStatusCards completed ===');
+}
+
+function forceRefreshData() {
+    console.log('=== FORCE REFRESH TRIGGERED ===');
+    
+    // Clear all possible caches
+    if (typeof(Storage) !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+    }
+    
+    // Clear global variables
+    apiHealthData = {};
+    
+    // Show loading state
+    const container = document.getElementById('api-status-cards');
+    if (container) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Forcing refresh...</span>
+                </div>
+                <p class="mt-2 text-muted">Forcing fresh data reload...</p>
+            </div>
+        `;
+    }
+    
+    // Force refresh
+    refreshAPIHealth().then(() => {
+        console.log('Force refresh completed successfully');
+    }).catch(error => {
+        console.error('Force refresh failed:', error);
+    });
 }
 
 function updateAPIMetricsTable(endpoints) {
