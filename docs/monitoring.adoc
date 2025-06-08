@@ -5,7 +5,7 @@ The LLM Inference Service provides comprehensive monitoring capabilities for pro
 === Monitoring Architecture
 
 .Monitoring System Architecture
-image::../images/monitoring-architecture.png[Monitoring Architecture,800,600]
+image::images/monitoring-architecture.png[Monitoring Architecture,800,600]
 
 The monitoring system consists of:
 
@@ -22,7 +22,7 @@ The monitoring system consists of:
 The service includes a comprehensive web dashboard accessible at `http://localhost:11435/dashboard`.
 
 .Dashboard Pages Architecture
-image::../images/dashboard-pages.png[Dashboard Pages,700,500]
+image::images/dashboard-pages.png[Dashboard Pages,700,500]
 
 **Dashboard Features:**
 * **15-second auto-refresh** to prevent API overload
@@ -74,7 +74,7 @@ image::../images/dashboard-pages.png[Dashboard Pages,700,500]
 === Health Score Calculation
 
 .Health Score Calculation Flow
-image::../images/health-score.png[Health Score,600,400]
+image::images/health-score.png[Health Score,600,400]
 
 **Scoring Components:**
 * **CPU Score**: 100 - CPU utilization percentage
@@ -125,7 +125,7 @@ alerts:
 === Alert Types
 
 .Alert Processing Flow
-image::../images/alert-flow.png[Alert Flow,600,500]
+image::images/alert-flow.png[Alert Flow,600,500]
 
 **Alert Lifecycle:**
 1. **Metric Collection**: Continuous monitoring of system metrics
@@ -218,7 +218,7 @@ Track performance for each API endpoint:
 === Performance Tracking
 
 .Performance Tracking Flow
-image::../images/performance-tracking.png[Performance Tracking,700,500]
+image::images/performance-tracking.png[Performance Tracking,700,500]
 
 **Tracking Process:**
 1. **Request Initiation**: Client sends request to API gateway
@@ -297,7 +297,7 @@ Configure log rotation in `/etc/logrotate.d/llm-inference`:
 === Monitoring-Based Optimization
 
 .Optimization Decision Flow
-image::../images/optimization-flow.png[Optimization Flow,600,400]
+image::images/optimization-flow.png[Optimization Flow,600,400]
 
 **Optimization Logic:**
 * **Low GPU Utilization (<50%)**: Increase batch size for better throughput
