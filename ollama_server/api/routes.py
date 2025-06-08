@@ -27,6 +27,8 @@ from .handlers import RequestHandler
 from ..utils.model_inspector import model_inspector
 from ..utils.gpu_monitor import gpu_monitor
 from ..utils.weight_distribution import weight_manager
+from ..utils.api_metrics import api_metrics
+from ..utils.hardware_optimizer import hardware_optimizer
 
 logger = logging.getLogger(__name__)
 
@@ -353,7 +355,7 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
             }), 500
 
     # ============================================================================
-    # Dashboard and Web Interface
+    # Dashboard Pages (HTML)
     # ============================================================================
     
     @api_bp.route('/dashboard', methods=['GET'])
@@ -363,9 +365,9 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
         gpu_monitor.start_monitoring()
         return render_template('dashboard.html')
 
-    @api_bp.route('/dashboard/data', methods=['GET'])
-    def dashboard_data():
-        """Enhanced dashboard data endpoint with GPU metrics."""
+    @api_bp.route('/api/metrics/dashboard', methods=['GET'])
+    def dashboard_metrics():
+        """Enhanced dashboard metrics API endpoint."""
         try:
             # Get service status
             status_response = health_check()
@@ -417,14 +419,71 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
         """API endpoint health monitoring page."""
         return render_template('api_health.html')
     
-    @api_bp.route('/api/dashboard/gpu-metrics', methods=['GET'])
+    @api_bp.route('/dashboard/config', methods=['GET'])
+    def config_panel_page():
+        """Dynamic configuration panel."""
+        return render_template('config_panel.html')
+    
+    # ============================================================================
+    # Metrics API Endpoints (JSON)
+    # ============================================================================
+    
+    @api_bp.route('/api/metrics/gpu', methods=['GET'])
     def gpu_metrics_api():
         """Real-time GPU metrics API endpoint."""
         try:
+            # Ensure GPU monitoring is started
+            gpu_monitor.start_monitoring()
+            
+            # Get metrics with fallback
             metrics = gpu_monitor.to_dict()
-            return jsonify(metrics) if metrics else jsonify({'error': 'No GPU data available'}), 503
+            if metrics:
+                return jsonify(metrics)
+            
+            # Try to get a basic GPU reading first
+            try:
+                basic_metrics = gpu_monitor.get_current_metrics()
+                if basic_metrics:
+                    from dataclasses import asdict
+                    return jsonify(asdict(basic_metrics))
+            except Exception as e:
+                logger.warning(f"Failed to get GPU metrics: {e}")
+            
+            # Return empty but valid structure
+            return jsonify({
+                'timestamp': datetime.now().isoformat(),
+                'gpus': [],
+                'total_memory_used': 0,
+                'total_memory_available': 0,
+                'driver_version': 'unknown',
+                'cuda_version': 'unknown',
+                'error': 'GPU data unavailable - may need NVIDIA drivers or GPU access'
+            })
+            
         except Exception as e:
             logger.exception("Error getting GPU metrics")
+            return jsonify({
+                'error': str(e),
+                'timestamp': datetime.now().isoformat(),
+                'gpus': [],
+                'total_memory_used': 0,
+                'total_memory_available': 0,
+                'driver_version': 'unknown',
+                'cuda_version': 'unknown'
+            }), 200  # Return 200 instead of 500 to avoid dashboard errors
+    
+    @api_bp.route('/api/metrics/apis', methods=['GET'])
+    def api_metrics_endpoint():
+        """Real-time API endpoint metrics."""
+        try:
+            metrics_data = api_metrics.get_endpoint_data_for_charts()
+            return jsonify({
+                'endpoints': metrics_data,
+                'timestamp': datetime.now().isoformat(),
+                'overallHealth': 'healthy' if all(e['status'] == 'healthy' for e in metrics_data) else 'degraded'
+            })
+        except Exception as e:
+            logger.exception("Error getting API metrics")
             return jsonify({'error': str(e)}), 500
     
     @api_bp.route('/api/dashboard/configure', methods=['POST'])
@@ -600,6 +659,41 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
         except Exception as e:
             logger.exception("Error validating weight distribution")
             return jsonify({'error': str(e)}), 500
+    
+    @api_bp.route('/api/metrics/optimization', methods=['GET'])
+    def hardware_optimization_insights():
+        """Hardware optimization insights and recommendations."""
+        try:
+            # Initialize hardware optimizer with current components
+            hardware_optimizer.gpu_monitor = gpu_monitor
+            hardware_optimizer.model_manager = model_manager
+            
+            # Get current configuration from request parameters or defaults
+            current_config = {
+                'tensor_split': request.args.get('tensor_split', config.default_tensor_split),
+                'gpu_layers': int(request.args.get('gpu_layers', 999)),
+                'threads': int(request.args.get('threads', 32)),
+                'batch_size': int(request.args.get('batch_size', 512)),
+                'context_size': int(request.args.get('context_size', 131072))
+            }
+            
+            # Perform comprehensive analysis
+            analysis = hardware_optimizer.analyze_system(current_config)
+            
+            # Convert dataclass to dict for JSON serialization
+            from dataclasses import asdict
+            analysis_dict = asdict(analysis)
+            
+            return jsonify(analysis_dict)
+            
+        except Exception as e:
+            logger.exception("Error generating optimization insights")
+            return jsonify({'error': str(e)}), 500
+    
+    @api_bp.route('/dashboard/optimization', methods=['GET'])
+    def optimization_insights_page():
+        """Hardware optimization insights dashboard page."""
+        return render_template('optimization_insights.html')
 
     @api_bp.route('/', methods=['GET'])
     def root():
@@ -615,5 +709,6 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
                 'models': '/api/models'
             }
         })
+    
 
     return api_bp
