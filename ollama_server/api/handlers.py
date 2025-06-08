@@ -25,6 +25,7 @@ from flask import Response, jsonify, stream_with_context
 from ..adapters.base import RequestAdapter
 from ..core.schemas import InternalRequest
 from ..utils.response_processing import preserve_think_tags_in_streaming, ThinkTagProcessor
+from ..utils.api_metrics import api_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +42,15 @@ class RequestHandler:
         req_id = request_obj.request_id 
         api_format = request_obj.additional_params.get('api_format', 'unknown')
         logger.info(f"[{req_id}] Creating streaming response for API: {api_format}, Model: {request_obj.model_name}")
+        
+        # Start timing for metrics
+        start_time = time.time()
 
         if not self.llama_executor:
             def error_gen():
+                # Record failed request
+                response_time = (time.time() - start_time) * 1000
+                api_metrics.record_request(api_format, 'failure', response_time)
                 yield "Error: LLM executor not available."
                 self.request_tracker.update_request(req_id, status='error', error="LLM executor not available.")
             return Response(stream_with_context(error_gen()), mimetype='text/plain', status=503)
@@ -108,6 +115,10 @@ class RequestHandler:
                 for chunk in self.llama_executor.execute_request_streaming(request_obj):
                     yield chunk
 
+            # Record successful streaming request
+            response_time = (time.time() - start_time) * 1000
+            api_metrics.record_request(api_format, 'success', response_time)
+            
             # Schedule cleanup
             self._schedule_cleanup(req_id)
 
@@ -126,13 +137,22 @@ class RequestHandler:
         api_format = request_obj.additional_params.get('api_format', 'unknown')
         logger.info(f"[{req_id}] Handling non-streaming request. API: {api_format}, Model: {request_obj.model_name}")
 
+        # Start timing for metrics
+        start_time = time.time()
+
         if not self.llama_executor:
+            # Record failed request
+            response_time = (time.time() - start_time) * 1000
+            api_metrics.record_request(api_format, 'failure', response_time)
             return jsonify({'error': 'LLM executor not available.'}), 503
 
         output, error_msg = self.llama_executor.execute_request_non_streaming(request_obj)
         
         if error_msg:
             logger.error(f"[{req_id}] Non-streaming call to executor failed: {error_msg}. Output (if any): '{output[:100]}...'")
+            # Record failed request
+            response_time = (time.time() - start_time) * 1000
+            api_metrics.record_request(api_format, 'failure', response_time)
             # API-specific error formatting
             err_resp_payload = {'error': error_msg}
             return jsonify(err_resp_payload), 500
@@ -152,6 +172,10 @@ class RequestHandler:
             
         resp = jsonify(response_data)
         resp.headers['X-Request-ID'] = req_id
+        
+        # Record successful request
+        response_time = (time.time() - start_time) * 1000
+        api_metrics.record_request(api_format, 'success', response_time)
         
         # Schedule cleanup
         self._schedule_cleanup(req_id)
