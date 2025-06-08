@@ -5,7 +5,6 @@
 :icons: font
 :source-highlighter: rouge
 :experimental:
-:imagesdir: images
 
 == Overview
 

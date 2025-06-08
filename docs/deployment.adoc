@@ -43,7 +43,7 @@ This guide covers deployment options for the LLM Inference Service in production
 === Deployment Architecture
 
 .Deployment Options Overview
-image::deployment-options.png[Deployment Options,800,600]
+image::../images/deployment-options.png[Deployment Options,800,600]
 
 The service supports multiple deployment patterns:
 
@@ -245,7 +245,7 @@ docker-compose down
 === High Availability Setup
 
 .High Availability Architecture
-image::ha-architecture.png[HA Architecture,800,600]
+image::../images/ha-architecture.png[HA Architecture,800,600]
 
 === HAProxy Configuration
 

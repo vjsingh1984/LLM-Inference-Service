@@ -5,7 +5,7 @@ The LLM Inference Service follows a modular architecture with clear separation o
 === Core Components
 
 .System Architecture Overview
-image::architecture-overview.png[Architecture Overview,800,600]
+image::../images/architecture-overview.png[Architecture Overview,800,600]
 
 The service is organized into distinct layers:
 
@@ -18,7 +18,7 @@ The service is organized into distinct layers:
 === Component Interactions
 
 .Data Flow Through System Components  
-image::data-flow.png[Data Flow,800,600]
+image::../images/data-flow.png[Data Flow,800,600]
 
 The request processing flow follows these key stages:
 
@@ -33,7 +33,7 @@ The request processing flow follows these key stages:
 === Deployment Architecture
 
 .Production Deployment Architecture
-image::deployment-architecture.png[Deployment Architecture,800,600]
+image::../images/deployment-architecture.png[Deployment Architecture,800,600]
 
 The deployment follows a production-ready pattern:
 
