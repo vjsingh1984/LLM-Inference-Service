@@ -69,36 +69,1601 @@ A clean, modular codebase with format-specific adapters ensures compatibility ac
 
 **Real-World Impact**: This approach enables startups and research teams to experiment with state-of-the-art models using existing hardware, while providing the monitoring and debugging capabilities needed for production deployment.
 
-== Documentation Structure
-
-This documentation is organized into focused sections:
-
-* **<<architecture>>**: System architecture and component design
-* **<<features>>**: Feature overview and capabilities  
-* **<<api-reference>>**: Complete API documentation and examples
-* **<<deployment>>**: Production deployment and configuration guide
-* **<<monitoring>>**: Monitoring, operations, and troubleshooting
 
 == Architecture
 
-include::docs/architecture.adoc[]
+=== System Architecture
 
+The LLM Inference Service follows a modular architecture with clear separation of concerns:
+
+=== Core Components
+
+.System Architecture Overview
+image::images/architecture-overview.png[Architecture Overview,800,600]
+
+The service is organized into distinct layers:
+
+* **API Gateway Layer**: Handles incoming requests and routing
+* **Request Processing**: Manages format adapters and request tracking
+* **Inference Engine**: Core LLM execution with GPU management
+* **Monitoring & Analytics**: Real-time monitoring and metrics collection
+* **Utilities**: Supporting services for optimization and cost analysis
+
+=== Component Interactions
+
+.Data Flow Through System Components  
+image::images/data-flow.png[Data Flow,800,600]
+
+The request processing flow follows these key stages:
+
+1. **Client Request**: Incoming HTTP request in various API formats
+2. **API Gateway**: Routes and validates requests
+3. **Format Adaptation**: Converts to internal format
+4. **Model Management**: Loads model metadata and validates parameters
+5. **GPU Allocation**: Distributes workload across available GPUs
+6. **Inference Execution**: Runs LLAMA.cpp with tensor splitting
+7. **Response Processing**: Formats output for client requirements
+
+=== Deployment Architecture
+
+.Production Deployment Architecture
+image::images/deployment-architecture.png[Deployment Architecture,800,600]
+
+The deployment follows a production-ready pattern:
+
+* **SystemD Service Management**: Auto-restart and lifecycle management
+* **Multi-GPU Configuration**: 4x Tesla M10 GPUs with equal tensor splits
+* **Persistent Storage**: Model repository and configuration management
+* **Network Security**: Firewall and load balancer integration
+* **Client Access**: Support for web, API, and CLI interfaces
+
+=== Technical Design Patterns
+
+=== Adapter Pattern
+Used for multi-API compatibility, allowing seamless support for different AI service formats.
+
+=== Observer Pattern
+Implemented in monitoring systems for real-time metric collection and alerting.
+
+=== Strategy Pattern
+Applied in model selection and execution strategies based on workload characteristics.
+
+=== Factory Pattern
+Used for creating appropriate adapters and executors based on request types.
+
+=== Component Details
+
+=== API Gateway Layer
+- **Flask API Server**: Main HTTP server handling all requests
+- **Route Handlers**: URL routing and endpoint management
+- **Request Validation**: Input validation and security checks
+
+=== Request Processing
+- **Request Adapters**: Format-specific request transformers
+- **Model Manager**: Model discovery and metadata management
+- **Request Tracker**: Active request monitoring and progress tracking
+
+=== Inference Engine
+- **LLAMA Executor**: Core inference execution using llama.cpp
+- **GPU Manager**: Multi-GPU resource allocation and monitoring
+- **Response Processor**: Output formatting and post-processing
+
+=== Monitoring & Analytics
+- **GPU Monitor**: Real-time GPU utilization and thermal monitoring
+- **API Metrics**: Request performance and endpoint health tracking
+- **Production Monitor**: System health scoring and alerting
+
+=== Utilities
+- **Model Inspector**: Dynamic model capability detection
+- **Hardware Optimizer**: System optimization analysis and recommendations
+- **Cost Calculator**: Deployment cost analysis and planning
 == Features
 
-include::docs/features.adoc[]
+=== Core Features
 
+=== Multi-API Compatibility
+
+The service provides comprehensive API compatibility with major LLM providers:
+
+.API Compatibility Architecture
+image::images/api-compatibility.png[API Compatibility,700,500]
+
+**Supported API Formats:**
+* **OpenAI API**: Full compatibility with `/api/chat/completions` endpoint
+* **Ollama API**: Native support for `/api/generate` and `/api/chat` endpoints  
+* **vLLM API**: Compatible with `/v1/completions` endpoint
+* **HuggingFace TGI**: Support for `/generate` endpoint
+
+**Key Features:**
+* Automatic format detection and transformation
+* Unified request processing pipeline
+* Format-specific response handling
+* Think tag preservation for reasoning models
+
+=== Dynamic Model Management
+
+.Model Management System
+image::images/model-management.png[Model Management,700,500]
+
+**Intelligent Model Discovery:**
+* Real-time Ollama CLI integration for accurate model parameters
+* Dynamic context size detection up to 131K+ tokens
+* Automatic bypass of artificial 4K context limitations
+* Family-based model defaults and optimization
+
+**Model Inspection Features:**
+* Parameter count and quantization level detection
+* Architecture-specific metadata extraction
+* Context window validation and optimization
+* Performance characteristic analysis
+
+=== GPU Management & Optimization
+
+.GPU Management Architecture  
+image::images/gpu-management.png[GPU Management,700,500]
+
+**Multi-GPU Coordination:**
+* 4x Tesla M10 GPU configuration with equal tensor splits (25% each)
+* Real-time temperature monitoring (39-72°C operating range)
+* Power efficiency tracking (25-34W per GPU, 47-65% of limit)
+* Memory utilization optimization (28.5% current usage with room for scaling)
+
+**Performance Monitoring:**
+* Live GPU utilization tracking (38.8% average)
+* Thermal management with alert thresholds
+* Memory allocation visualization
+* Power consumption efficiency metrics
+
+=== Advanced Features
+
+=== Think Tag Preservation
+
+Special handling for reasoning models that use internal thought processes:
+
+.Think Tag Processing Flow
+image::images/think-tag-flow.png[Think Tag Flow,600,400]
+
+**Processing Logic:**
+* **Ollama Format**: Preserves `<think>...</think>` tags in responses (matches official behavior)
+* **OpenAI Format**: Strips think tags for clean responses, stores content for analysis
+* **Model Support**: phi4-reasoning, deepseek-r1, and other reasoning models
+* **Transparency**: Optional think content exposure for debugging and analysis
+
+=== Real-time Monitoring Dashboard
+
+.Web Dashboard Features
+image::images/monitoring-features.png[Monitoring Features,800,600]
+
+**Dashboard Capabilities:**
+* **15-second refresh intervals** to prevent API overload
+* **Real-time data updates** with live GPU monitoring
+* **Responsive design** for desktop and mobile access
+* **Export capabilities** for data analysis and reporting
+
+**Specialized Dashboards:**
+* **Main Dashboard**: System overview with active requests and GPU status
+* **GPU Monitor**: Dedicated hardware monitoring with thermal management
+* **Model Analytics**: Performance metrics and context analysis for 52+ models
+* **API Health**: Multi-endpoint monitoring with response times and success rates
+* **Configuration**: Dynamic system settings with optimization presets
+* **Production Monitor**: Health scoring and automated alerting
+
+=== Hardware Optimization System
+
+.Hardware Optimization Engine
+image::images/hardware-optimization.png[Hardware Optimization,700,500]
+
+**Intelligent Analysis:**
+* **System Scoring**: 0-100 scale optimization score (current: 100.0/100)
+* **Component Analysis**: CPU, Memory, GPU, and Model diversity assessment
+* **Recommendation Engine**: Prioritized suggestions with impact analysis
+* **Performance Optimization**: Real-time configuration adjustments
+
+**Optimization Categories:**
+* **Performance**: GPU utilization and tensor split optimization
+* **Stability**: Thermal management and resource allocation
+* **Cost**: Efficiency recommendations and scaling strategies
+* **Scaling**: Hardware upgrade and expansion guidance
+
+=== Dashboard Screenshots
+
+=== Main Dashboard
+image::images/llm-service-main-dashboard.png[Main Dashboard,1200,800]
+
+The main dashboard provides a unified view of system status, active requests, and real-time GPU monitoring.
+
+=== GPU Monitor Dashboard
+image::images/llm-service-main-gpudetail.png[GPU Monitor,1200,800]
+
+Detailed GPU monitoring with temperature, utilization, and memory tracking for each Tesla M10 GPU.
+
+=== Configuration Panel
+image::images/llm-service-main-configset.png[Configuration Panel,1200,800]
+
+Dynamic configuration panel allowing real-time system adjustments and optimization presets.
+
+=== Optimization Dashboard
+image::images/optimization-dashboard-screenshot.png[Optimization Dashboard,1200,800]
+
+Hardware optimization insights with scoring, recommendations, and system analysis.
+
+=== Production Features
+
+=== Model Analytics
+* **Performance Benchmarking**: Comprehensive model comparison and analysis
+* **Context Detection**: Automatic identification of true context capabilities
+* **Usage Patterns**: Statistical analysis of model utilization
+* **Optimization Recommendations**: Model-specific performance tuning
+
+=== API Metrics Tracking
+* **Real-time Performance**: Actual endpoint response times and success rates
+* **Error Analysis**: Detailed failure tracking and categorization
+* **Usage Statistics**: Request volume and pattern analysis
+* **Health Monitoring**: Automated endpoint health assessment
+
+=== Configuration Management
+* **Dynamic Updates**: Real-time configuration changes without restart
+* **Preset Profiles**: High Performance, Balanced, and Conservative modes
+* **Validation**: Configuration impact analysis and validation
+* **Backup/Restore**: Configuration versioning and rollback capabilities
+
+=== Cost Analysis
+* **Deployment Planning**: TCO analysis for hardware configurations  
+* **ROI Calculator**: Cost-benefit analysis for different setups
+* **Efficiency Metrics**: Performance per dollar optimization
+* **Scaling Recommendations**: Cost-effective expansion strategies
+
+=== Integration Features
+
+=== External Service Integration
+* **Ollama CLI**: Direct integration for model inspection and management
+* **NVIDIA Drivers**: Real-time GPU monitoring and management
+* **SystemD**: Production service lifecycle management
+* **Prometheus**: Metrics export for external monitoring systems
+
+=== Development Tools
+* **Debug Mode**: Enhanced logging and troubleshooting capabilities
+* **Testing Framework**: Comprehensive API and system testing
+* **Documentation**: Auto-generated API documentation and examples
+* **Development Server**: Hot-reload development environment
 == API Reference
 
-include::docs/api-reference.adoc[]
+=== Overview
 
+The LLM Inference Service provides multiple API endpoints compatible with various AI service providers. All endpoints support both streaming and non-streaming responses.
+
+=== Authentication
+
+Currently, the service does not require authentication. In production deployments, implement appropriate authentication mechanisms.
+
+=== Base URL
+
+```
+http://localhost:11435
+```
+
+=== Chat Completion APIs
+
+=== OpenAI Compatible
+
+===== Create Chat Completion
+
+[source,http]
+----
+POST /api/chat/completions
+Content-Type: application/json
+
+{
+  "model": "phi4:latest",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "Hello, how are you?"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 200,
+  "stream": false
+}
+----
+
+**Response:**
+[source,json]
+----
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "phi4:latest",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "I'm doing well, thank you! How can I help you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 15,
+    "total_tokens": 35
+  }
+}
+----
+
+=== Ollama Compatible
+
+===== Generate Completion
+
+[source,http]
+----
+POST /api/generate
+Content-Type: application/json
+
+{
+  "model": "llama3:70b",
+  "prompt": "Why is the sky blue?",
+  "stream": false,
+  "options": {
+    "temperature": 0.8,
+    "num_predict": 100,
+    "num_ctx": 8192
+  }
+}
+----
+
+===== Chat Completion
+
+[source,http]
+----
+POST /api/chat
+Content-Type: application/json
+
+{
+  "model": "phi4-reasoning:latest",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain quantum computing"
+    }
+  ],
+  "stream": false
+}
+----
+
+=== vLLM Compatible
+
+===== Create Completion
+
+[source,http]
+----
+POST /v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "mixtral:8x7b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is machine learning?"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 150
+}
+----
+
+=== HuggingFace TGI Compatible
+
+===== Generate Text
+
+[source,http]
+----
+POST /generate
+Content-Type: application/json
+
+{
+  "inputs": "The future of AI is",
+  "parameters": {
+    "max_new_tokens": 50,
+    "temperature": 0.9,
+    "top_p": 0.95
+  }
+}
+----
+
+=== Model Management APIs
+
+=== List Models
+
+[source,http]
+----
+GET /api/models
+----
+
+**Response:**
+[source,json]
+----
+{
+  "models": [
+    {
+      "name": "phi4:latest",
+      "id": "phi4:latest",
+      "parameter_size": "14B",
+      "quantization": "Q8_0",
+      "context_size": 16384,
+      "created": "2025-06-07T12:00:00Z"
+    },
+    {
+      "name": "llama3:70b",
+      "id": "llama3:70b",
+      "parameter_size": "70B",
+      "quantization": "Q4_K_M",
+      "context_size": 8192,
+      "created": "2025-06-07T12:00:00Z"
+    }
+  ]
+}
+----
+
+=== Show Model Details
+
+[source,http]
+----
+POST /api/show
+Content-Type: application/json
+
+{
+  "name": "phi4:latest"
+}
+----
+
+**Response:**
+[source,json]
+----
+{
+  "license": "Apache 2.0",
+  "modelfile": "# Modelfile generated...",
+  "parameters": "parameter_size 14B\nquantization_level Q8_0",
+  "template": "{{- if .System }}{{ .System }}{{ end }}...",
+  "details": {
+    "format": "gguf",
+    "family": "phi",
+    "parameter_size": "14B",
+    "quantization_level": "Q8_0"
+  },
+  "model_info": {
+    "general.architecture": "phi",
+    "phi.context_length": 16384,
+    "phi.embedding_length": 4096
+  }
+}
+----
+
+=== Monitoring APIs
+
+=== Health Check
+
+[source,http]
+----
+GET /health
+----
+
+**Response:**
+[source,json]
+----
+{
+  "status": "healthy",
+  "timestamp": "2025-06-07T20:30:00Z",
+  "components": {
+    "executor": "healthy",
+    "models": "52 available",
+    "active_requests": 3
+  }
+}
+----
+
+=== Dashboard Metrics
+
+[source,http]
+----
+GET /api/metrics/dashboard
+----
+
+**Response:**
+[source,json]
+----
+{
+  "status": {
+    "status": "healthy",
+    "timestamp": "2025-06-07T20:30:00Z"
+  },
+  "requests": [
+    {
+      "request_id": "abc123",
+      "status": "processing",
+      "model": "phi4:latest",
+      "progress": 45,
+      "total": 100
+    }
+  ],
+  "models": [...],
+  "gpu_metrics": {
+    "gpus": [...],
+    "total_memory_used": 9120,
+    "total_memory_available": 32768
+  }
+}
+----
+
+=== GPU Metrics
+
+[source,http]
+----
+GET /api/metrics/gpu
+----
+
+**Response:**
+[source,json]
+----
+{
+  "timestamp": "2025-06-07T20:30:00Z",
+  "gpus": [
+    {
+      "index": 0,
+      "name": "Tesla M10",
+      "temperature": 45,
+      "utilization_percent": 35.5,
+      "memory_used": 2280,
+      "memory_total": 8192,
+      "power_draw": 30,
+      "power_limit": 225
+    }
+  ],
+  "driver_version": "535.154.05",
+  "cuda_version": "12.2"
+}
+----
+
+=== API Endpoint Metrics
+
+[source,http]
+----
+GET /api/metrics/apis
+----
+
+=== Hardware Optimization Insights
+
+[source,http]
+----
+GET /api/metrics/optimization
+----
+
+=== Configuration APIs
+
+=== Update Configuration
+
+[source,http]
+----
+POST /api/dashboard/configure
+Content-Type: application/json
+
+{
+  "tensor_split": "0.25,0.25,0.25,0.25",
+  "gpu_layers": 999,
+  "context_size": 131072,
+  "batch_size": 512
+}
+----
+
+=== Weight Distribution Management
+
+[source,http]
+----
+GET /api/dashboard/weight-distribution
+POST /api/dashboard/weight-distribution
+
+{
+  "preset": "balanced",
+  "model_name": "llama3:70b"
+}
+----
+
+=== Progress Tracking
+
+=== Get Request Progress
+
+[source,http]
+----
+GET /api/progress/{request_id}
+----
+
+=== Dismiss Request
+
+[source,http]
+----
+POST /api/dismiss/{request_id}
+----
+
+=== Response Formats
+
+=== Streaming Responses
+
+When `stream: true` is set, responses are sent as Server-Sent Events (SSE):
+
+[source]
+----
+data: {"choices":[{"delta":{"content":"Hello"},"index":0}]}
+
+data: {"choices":[{"delta":{"content":" there"},"index":0}]}
+
+data: [DONE]
+----
+
+=== Error Responses
+
+[source,json]
+----
+{
+  "error": {
+    "message": "Model not found",
+    "type": "model_not_found",
+    "code": 404
+  }
+}
+----
+
+=== Rate Limiting
+
+Currently no rate limiting is implemented. In production, implement appropriate rate limiting based on your requirements.
+
+=== Best Practices
+
+1. **Model Selection**: Use the `/api/models` endpoint to discover available models before making requests
+2. **Context Limits**: Check model capabilities with `/api/show` to understand context window sizes
+3. **Streaming**: Use streaming for better user experience with long responses
+4. **Error Handling**: Implement proper error handling for all API calls
+5. **Monitoring**: Use the dashboard metrics endpoints to monitor system health
 == Deployment
 
-include::docs/deployment.adoc[]
+=== Overview
 
+This guide covers deployment options for the LLM Inference Service in production environments.
+
+=== System Requirements
+
+=== Hardware Requirements
+
+[cols="2,3,2", options="header"]
+|===
+|Component |Minimum |Recommended
+
+|CPU
+|8 cores, x86_64
+|32+ cores, Intel Xeon or AMD EPYC
+
+|Memory
+|32GB RAM
+|256GB+ ECC RAM
+
+|GPU
+|1x NVIDIA GPU (8GB VRAM)
+|4x NVIDIA GPUs (24GB+ VRAM each)
+
+|Storage
+|500GB SSD
+|2TB+ NVMe SSD
+
+|Network
+|1 Gbps
+|10 Gbps
+|===
+
+=== Software Requirements
+
+* Ubuntu 20.04+ or RHEL 8+
+* Python 3.10+
+* NVIDIA Driver 525+
+* CUDA 11.8+
+* Docker 20.10+ (optional)
+* SystemD (for service deployment)
+
+=== Deployment Architecture
+
+.Deployment Options Overview
+image::images/deployment-options.png[Deployment Options,800,600]
+
+The service supports multiple deployment patterns:
+
+* **SystemD Service**: Native installation with automatic lifecycle management
+* **Container Deployment**: Docker-based deployment with GPU passthrough
+* **High Availability**: Multi-instance setup with load balancing
+* **Cloud-Native**: Kubernetes deployment for scalable cloud environments
+
+=== SystemD Service Deployment
+
+=== Installation Steps
+
+1. **Clone the repository**:
+[source,bash]
+----
+git clone https://github.com/your-org/llm-inference-service.git
+cd llm-inference-service
+----
+
+2. **Install dependencies**:
+[source,bash]
+----
+# System dependencies
+sudo apt-get update
+sudo apt-get install -y python3-pip python3-venv nvidia-driver-535
+
+# Python environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+----
+
+3. **Build llama.cpp**:
+[source,bash]
+----
+cd /opt/llm/models/ollama-custom-models
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+mkdir build && cd build
+cmake .. -DLLAMA_CUDA=ON
+make -j$(nproc)
+----
+
+4. **Configure the service**:
+[source,bash]
+----
+# Copy and edit configuration
+cp config/service_config.example.yaml config/service_config.yaml
+vim config/service_config.yaml
+----
+
+5. **Install SystemD service**:
+[source,bash]
+----
+# For system-wide installation
+sudo ./install-service.sh
+
+# For user-level installation
+./install-user-service.sh
+----
+
+6. **Start the service**:
+[source,bash]
+----
+# System service
+sudo systemctl start llm-inference
+sudo systemctl enable llm-inference
+
+# User service
+systemctl --user start llm-inference
+systemctl --user enable llm-inference
+----
+
+=== Service Configuration
+
+[source,yaml]
+----
+# /opt/llm/inference-service/config/service_config.yaml
+models_dir: /opt/llm/models/ollama/models/blobs
+manifests_dir: /opt/llm/models/ollama/models/manifests
+llama_cpp_path: /opt/llm/models/ollama-custom-models/llama.cpp
+default_context_size: 131072
+tensor_split: '0.25,0.25,0.25,0.25'  # For 4 GPUs
+gpu_layers: 999
+threads: 32
+batch_size: 512
+request_timeout: 1800
+log_level: INFO
+enable_model_inspection: true
+preserve_think_tags: true
+----
+
+=== Service Management
+
+[source,bash]
+----
+# Check status
+systemctl --user status llm-inference
+
+# View logs
+journalctl --user -u llm-inference -f
+
+# Restart service
+systemctl --user restart llm-inference
+
+# Stop service
+systemctl --user stop llm-inference
+----
+
+=== Docker Deployment
+
+=== Building the Image
+
+[source,dockerfile]
+----
+# Dockerfile
+FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    git \
+    cmake \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy application
+COPY . .
+
+# Install Python dependencies
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Build llama.cpp
+RUN cd /opt && \
+    git clone https://github.com/ggerganov/llama.cpp && \
+    cd llama.cpp && \
+    mkdir build && cd build && \
+    cmake .. -DLLAMA_CUDA=ON && \
+    make -j$(nproc)
+
+# Expose port
+EXPOSE 11435
+
+# Run the service
+CMD ["python3", "-m", "ollama_server.main", "--port", "11435"]
+----
+
+=== Docker Compose
+
+[source,yaml]
+----
+version: '3.8'
+
+services:
+  llm-inference:
+    build: .
+    image: llm-inference:latest
+    container_name: llm-inference
+    ports:
+      - "11435:11435"
+    volumes:
+      - /opt/llm/models:/opt/llm/models
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=0,1,2,3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+----
+
+=== Running with Docker
+
+[source,bash]
+----
+# Build the image
+docker-compose build
+
+# Start the service
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the service
+docker-compose down
+----
+
+=== High Availability Setup
+
+.High Availability Architecture
+image::images/ha-architecture.png[HA Architecture,800,600]
+
+=== HAProxy Configuration
+
+[source,conf]
+----
+global
+    maxconn 4096
+    log stdout local0
+
+defaults
+    mode http
+    timeout connect 5s
+    timeout client 30s
+    timeout server 30s
+    option httplog
+
+frontend llm_frontend
+    bind *:80
+    default_backend llm_backend
+
+backend llm_backend
+    balance roundrobin
+    option httpchk GET /health
+    
+    server llm1 192.168.1.10:11435 check
+    server llm2 192.168.1.11:11435 check
+----
+
+=== Load Balancer Setup
+
+**Features:**
+* Round-robin load balancing with health checks
+* Automatic failover for failed instances
+* Session persistence for streaming requests
+* Real-time monitoring and metrics
+
+**Health Check Configuration:**
+* Endpoint: `/health`
+* Interval: 30 seconds
+* Timeout: 5 seconds
+* Failure threshold: 3 consecutive failures
+
+=== Security Considerations
+
+=== Network Security
+
+1. **Firewall Rules**:
+[source,bash]
+----
+# Allow only necessary ports
+sudo ufw allow 22/tcp     # SSH
+sudo ufw allow 11435/tcp  # LLM Service
+sudo ufw enable
+----
+
+2. **SSL/TLS Configuration**:
+[source,nginx]
+----
+server {
+    listen 443 ssl http2;
+    server_name llm.example.com;
+    
+    ssl_certificate /etc/ssl/certs/llm.crt;
+    ssl_certificate_key /etc/ssl/private/llm.key;
+    
+    location / {
+        proxy_pass http://localhost:11435;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+----
+
+=== Authentication
+
+Implement authentication middleware:
+
+[source,python]
+----
+from functools import wraps
+from flask import request, jsonify
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key')
+        if not api_key or not validate_api_key(api_key):
+            return jsonify({'error': 'Invalid API key'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+----
+
+=== Monitoring Setup
+
+=== Prometheus Configuration
+
+[source,yaml]
+----
+# prometheus.yml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'llm-inference'
+    static_configs:
+      - targets: ['localhost:11435']
+    metrics_path: '/metrics'
+----
+
+=== Grafana Dashboard
+
+Import the provided dashboard JSON from `monitoring/grafana-dashboard.json` for:
+
+* GPU utilization and temperature
+* Request latency and throughput
+* Model performance metrics
+* System resource usage
+
+=== Backup and Recovery
+
+=== Backup Strategy
+
+[source,bash]
+----
+#!/bin/bash
+# backup.sh
+
+BACKUP_DIR="/backup/llm-inference"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+# Backup configuration
+cp -r /opt/llm/inference-service/config $BACKUP_DIR/config_$DATE
+
+# Backup logs
+tar -czf $BACKUP_DIR/logs_$DATE.tar.gz /opt/llm/inference-service/logs
+
+# Backup model metadata (not the models themselves)
+cp -r /opt/llm/models/ollama/models/manifests $BACKUP_DIR/manifests_$DATE
+
+echo "Backup completed: $BACKUP_DIR/*_$DATE"
+----
+
+=== Recovery Procedure
+
+1. Restore configuration files
+2. Restart the service
+3. Verify model availability
+4. Test API endpoints
+
+=== Troubleshooting
+
+=== Common Issues
+
+[cols="2,3,3", options="header"]
+|===
+|Issue |Cause |Solution
+
+|Service won't start
+|Missing dependencies
+|Check logs with `journalctl --user -u llm-inference -n 100`
+
+|GPU not detected
+|Driver issues
+|Verify with `nvidia-smi` and reinstall drivers if needed
+
+|High memory usage
+|Large context windows
+|Adjust `default_context_size` in configuration
+
+|Slow inference
+|CPU-only mode
+|Check `gpu_layers` setting and GPU availability
+
+|Model not found
+|Incorrect path
+|Verify `models_dir` in configuration
+|===
+
+=== Debug Mode
+
+Enable debug logging:
+
+[source,bash]
+----
+# Edit service config
+log_level: DEBUG
+
+# Or run manually
+python -m ollama_server.main --debug --port 11435
+----
+
+=== Performance Tuning
+
+=== GPU Optimization
+
+[source,yaml]
+----
+# Optimal settings for 4x Tesla M10
+tensor_split: '0.25,0.25,0.25,0.25'
+gpu_layers: 999
+batch_size: 512
+----
+
+=== Context Management
+
+[source,yaml]
+----
+# Balance between capability and memory
+default_context_size: 32768  # For limited VRAM
+# default_context_size: 131072  # For ample VRAM
+----
+
+=== Request Handling
+
+[source,yaml]
+----
+# Concurrent request tuning
+request_timeout: 1800
+max_concurrent_requests: 10  # Adjust based on GPU memory
+----
+
+=== Production Checklist
+
+=== Pre-Deployment
+- [ ] Hardware requirements verified
+- [ ] Dependencies installed and tested
+- [ ] Configuration file reviewed and customized
+- [ ] SSL certificates configured (if applicable)
+- [ ] Firewall rules implemented
+- [ ] Backup strategy defined
+
+=== Post-Deployment
+- [ ] Service health check passing
+- [ ] GPU monitoring active
+- [ ] API endpoints responsive
+- [ ] Dashboard accessible
+- [ ] Logging configuration verified
+- [ ] Monitoring alerts configured
+- [ ] Performance benchmarks established
+
+=== Ongoing Maintenance
+- [ ] Regular log rotation
+- [ ] Performance monitoring
+- [ ] Security updates
+- [ ] Configuration backups
+- [ ] Capacity planning reviews
 == Monitoring
 
-include::docs/monitoring.adoc[]
+=== Overview
 
+The LLM Inference Service provides comprehensive monitoring capabilities for production deployments.
+
+=== Monitoring Architecture
+
+.Monitoring System Architecture
+image::images/monitoring-architecture.png[Monitoring Architecture,800,600]
+
+The monitoring system consists of:
+
+* **LLM Inference Service**: Core service with integrated metrics collection
+* **Metrics Collection**: Prometheus exporters and log aggregation
+* **Visualization**: Web dashboards and Grafana integration
+* **Storage**: Time-series database for metrics and log storage
+* **Alerting**: Automated alert management and notifications
+
+=== Web Dashboard
+
+=== Dashboard Overview
+
+The service includes a comprehensive web dashboard accessible at `http://localhost:11435/dashboard`.
+
+.Dashboard Pages Architecture
+image::images/dashboard-pages.png[Dashboard Pages,700,500]
+
+**Dashboard Features:**
+* **15-second auto-refresh** to prevent API overload
+* **Real-time data updates** with live GPU monitoring
+* **Responsive design** for desktop and mobile access
+* **Export capabilities** for data analysis and reporting
+
+=== Key Metrics Tracked
+
+[cols="2,3,2", options="header"]
+|===
+|Metric |Description |Update Frequency
+
+|GPU Temperature
+|Per-GPU temperature in Celsius
+|Real-time (1s)
+
+|GPU Utilization
+|Percentage of GPU compute usage
+|Real-time (1s)
+
+|Memory Usage
+|VRAM usage per GPU in MB
+|Real-time (1s)
+
+|Request Latency
+|End-to-end request processing time
+|Per request
+
+|Token Generation Rate
+|Tokens per second during inference
+|Per request
+
+|API Success Rate
+|Percentage of successful requests
+|1 minute window
+
+|System Health Score
+|0-100 composite health indicator
+|1 minute
+
+|Active Alerts
+|Current unresolved system alerts
+|Real-time
+|===
+
+=== Production Monitoring
+
+=== Health Score Calculation
+
+.Health Score Calculation Flow
+image::images/health-score.png[Health Score,600,400]
+
+**Scoring Components:**
+* **CPU Score**: 100 - CPU utilization percentage
+* **Memory Score**: 100 - Memory utilization percentage  
+* **GPU Score**: 100 - (Temperature/Max × 100)
+* **Error Score**: 100 - (Error rate × 10)
+* **Response Score**: 100 - ((Response time - 5000) / 250)
+
+**Final Calculation:**
+* Weighted average of all component scores
+* Penalty reduction for active alerts (20 points per alert)
+* Scale: 0-100 (>80 = Healthy, 60-80 = Warning, <60 = Critical)
+
+=== Alert Configuration
+
+Configure alerts in the Production Monitor dashboard:
+
+[source,yaml]
+----
+# Alert thresholds
+alerts:
+  cpu_usage:
+    warning: 80    # percentage
+    critical: 95
+    duration: 300  # seconds
+    
+  memory_usage:
+    warning: 85
+    critical: 95
+    duration: 300
+    
+  gpu_temperature:
+    warning: 80    # Celsius
+    critical: 85
+    duration: 180
+    
+  error_rate:
+    warning: 5     # percentage
+    critical: 15
+    duration: 120
+    
+  response_time:
+    warning: 10000 # milliseconds
+    critical: 30000
+    duration: 180
+----
+
+=== Alert Types
+
+.Alert Processing Flow
+image::images/alert-flow.png[Alert Flow,600,500]
+
+**Alert Lifecycle:**
+1. **Metric Collection**: Continuous monitoring of system metrics
+2. **Threshold Evaluation**: Check against warning and critical thresholds
+3. **Duration Timer**: Prevent false positives with sustained threshold violations
+4. **Alert Creation**: Generate warning or critical alerts based on severity
+5. **Notification**: Send alerts via dashboard, logs, email, or webhooks
+6. **Resolution**: Automatic resolution when metrics return to normal
+
+## GPU Monitoring
+
+=== Metrics Collected
+
+[source,json]
+----
+{
+  "timestamp": "2025-06-07T20:30:00Z",
+  "gpus": [
+    {
+      "index": 0,
+      "name": "Tesla M10",
+      "temperature": 45,
+      "utilization_percent": 35.5,
+      "memory_used": 2280,
+      "memory_total": 8192,
+      "memory_percent": 27.8,
+      "power_draw": 30,
+      "power_limit": 225,
+      "fan_speed": 40
+    }
+  ],
+  "total_memory_used": 9120,
+  "total_memory_available": 32768,
+  "average_temperature": 48.5,
+  "average_utilization": 38.8,
+  "thermal_status": "good"
+}
+----
+
+=== Thermal Management
+
+[cols="2,2,3", options="header"]
+|===
+|Temperature Range |Status |Action
+
+|< 70°C
+|Good
+|Normal operation
+
+|70-80°C
+|Warning
+|Monitor closely, check cooling
+
+|80-85°C
+|Critical
+|Reduce workload, check fans
+
+|> 85°C
+|Emergency
+|Throttle or shutdown
+|===
+
+=== API Monitoring
+
+=== Endpoint Metrics
+
+Track performance for each API endpoint:
+
+[source,json]
+----
+{
+  "endpoints": [
+    {
+      "endpoint": "OpenAI API",
+      "path": "/api/chat/completions",
+      "total_requests": 1527,
+      "successful_requests": 1520,
+      "failed_requests": 7,
+      "average_response_time": 245.3,
+      "success_rate": 99.5,
+      "last_request_time": "2025-06-07T20:29:45Z",
+      "status": "healthy"
+    }
+  ],
+  "timestamp": "2025-06-07T20:30:00Z",
+  "overallHealth": "healthy"
+}
+----
+
+=== Performance Tracking
+
+.Performance Tracking Flow
+image::images/performance-tracking.png[Performance Tracking,700,500]
+
+**Tracking Process:**
+1. **Request Initiation**: Client sends request to API gateway
+2. **Timer Start**: Metrics collector starts response time measurement
+3. **Request Processing**: API processes request through inference pipeline
+4. **Metrics Calculation**: Calculate response time, success/failure, token count
+5. **Dashboard Update**: Real-time dashboard updates with latest metrics
+
+=== Log Management
+
+=== Log Structure
+
+[source,json]
+----
+{
+  "timestamp": "2025-06-07T20:30:00.123Z",
+  "level": "INFO",
+  "logger": "ollama_server.api.handlers",
+  "request_id": "7b4fa8e5-e2a9-4410-b43c-d071c8323fe1",
+  "message": "Handling non-streaming request",
+  "extra": {
+    "api": "openai",
+    "model": "phi4:latest",
+    "endpoint": "/api/chat/completions",
+    "remote_addr": "192.168.1.100"
+  }
+}
+----
+
+=== Log Levels
+
+[cols="1,3,2", options="header"]
+|===
+|Level |Usage |Example
+
+|ERROR
+|System errors, failures
+|Model loading failed
+
+|WARNING
+|Performance issues, alerts
+|High GPU temperature
+
+|INFO
+|Normal operations
+|Request completed
+
+|DEBUG
+|Detailed troubleshooting
+|Token generation details
+|===
+
+=== Log Rotation
+
+Configure log rotation in `/etc/logrotate.d/llm-inference`:
+
+[source,conf]
+----
+/opt/llm/inference-service/logs/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 llm llm
+    sharedscripts
+    postrotate
+        systemctl reload llm-inference
+    endscript
+}
+----
+
+=== Performance Optimization
+
+=== Monitoring-Based Optimization
+
+.Optimization Decision Flow
+image::images/optimization-flow.png[Optimization Flow,600,400]
+
+**Optimization Logic:**
+* **Low GPU Utilization (<50%)**: Increase batch size for better throughput
+* **High Memory Usage (>90%)**: Reduce context size to prevent OOM errors
+* **High Response Time**: Increase GPU layers or add more GPUs
+* **Optimal Performance**: Maintain current configuration
+
+=== Key Performance Indicators
+
+1. **Throughput**: Tokens per second
+2. **Latency**: 95th percentile response time
+3. **Efficiency**: GPU utilization percentage
+4. **Reliability**: Success rate percentage
+5. **Scalability**: Concurrent request capacity
+
+=== Alerting Integration
+
+=== Webhook Configuration
+
+[source,python]
+----
+# config/alerting.yaml
+alerting:
+  webhooks:
+    - url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+      events: ["critical", "warning"]
+      
+    - url: "https://api.pagerduty.com/incidents"
+      events: ["critical"]
+      headers:
+        Authorization: "Token token=YOUR_TOKEN"
+----
+
+=== Email Alerts
+
+[source,yaml]
+----
+email:
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  use_tls: true
+  username: "alerts@example.com"
+  recipients:
+    - "ops-team@example.com"
+    - "on-call@example.com"
+----
+
+=== Grafana Integration
+
+=== Prometheus Metrics Export
+
+The service exposes Prometheus-compatible metrics at `/metrics`:
+
+[source,prometheus]
+----
+# HELP llm_request_duration_seconds Request duration
+# TYPE llm_request_duration_seconds histogram
+llm_request_duration_seconds_bucket{api="openai",model="phi4",le="0.1"} 245
+llm_request_duration_seconds_bucket{api="openai",model="phi4",le="0.5"} 1203
+
+# HELP llm_gpu_temperature_celsius GPU temperature
+# TYPE llm_gpu_temperature_celsius gauge
+llm_gpu_temperature_celsius{gpu="0",name="Tesla M10"} 45
+
+# HELP llm_active_requests Number of active requests
+# TYPE llm_active_requests gauge
+llm_active_requests 3
+----
+
+=== Sample Grafana Dashboard
+
+Import `monitoring/grafana-dashboard.json` for pre-configured panels:
+
+* Request rate and latency
+* GPU utilization heatmap
+* Model performance comparison
+* System resource usage
+* Alert history
+
+=== Troubleshooting with Monitoring
+
+=== Performance Issues
+
+1. Check GPU utilization in dashboard
+2. Review response time trends
+3. Analyze error logs
+4. Verify resource allocation
+
+=== Common Patterns
+
+[cols="2,3,3", options="header"]
+|===
+|Pattern |Likely Cause |Investigation
+
+|Increasing latency
+|Memory pressure, thermal throttling
+|Check GPU temperature and VRAM usage
+
+|Error rate spikes
+|Model issues, OOM errors
+|Review error logs and GPU memory
+
+|Low GPU utilization
+|CPU bottleneck, small batch size
+|Increase batch size, check CPU usage
+
+|Intermittent failures
+|Resource contention, driver issues
+|Check system logs and dmesg
+|===
+
+=== Monitoring Best Practices
+
+=== Dashboard Usage
+* Monitor main dashboard for system overview
+* Use specialized dashboards for detailed analysis
+* Set up automated alerts for critical metrics
+* Export data for trend analysis and capacity planning
+
+=== Alert Configuration
+* Set appropriate warning and critical thresholds
+* Use duration-based triggering to prevent false positives
+* Configure multiple notification channels for redundancy
+* Regular review and tuning of alert thresholds
+
+=== Performance Monitoring
+* Establish baseline performance metrics
+* Monitor trends for capacity planning
+* Use optimization insights for system tuning
+* Regular performance reviews and adjustments
+
+=== Log Analysis
+* Configure appropriate log levels for environment
+* Implement log rotation to manage disk space
+* Use structured logging for better analysis
+* Regular log review for security and performance insights
 == Quick Start
 
 === Installation
