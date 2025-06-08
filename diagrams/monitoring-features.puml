@@ -1,0 +1,58 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+skinparam rectangleBackgroundColor #FFFFFF
+
+rectangle "Web Dashboard Features" #E8F5E9 {
+    rectangle "Main Dashboard" #4CAF50 {
+        (System Overview)
+        (Active Requests)
+        (GPU Status)
+        (Model Status)
+    }
+    
+    rectangle "GPU Monitor" #2196F3 {
+        (Temperature Tracking)
+        (Utilization Graphs)
+        (Memory Usage)
+        (Power Consumption)
+    }
+    
+    rectangle "Model Analytics" #FF9800 {
+        (Performance Metrics)
+        (Context Analysis)
+        (Usage Patterns)
+        (Benchmarking)
+    }
+    
+    rectangle "API Health" #9C27B0 {
+        (Endpoint Metrics)
+        (Response Times)
+        (Success Rates)
+        (Error Tracking)
+    }
+    
+    rectangle "Configuration" #4DB6AC {
+        (Dynamic Settings)
+        (Tensor Splits)
+        (Optimization Presets)
+        (Model Parameters)
+    }
+    
+    rectangle "Production Monitor" #F44336 {
+        (System Health Score)
+        (Alert Management)
+        (Performance Trends)
+        (Log Analysis)
+    }
+}
+
+note bottom
+  15-second refresh intervals
+  Real-time data updates
+  Export capabilities
+  Responsive design
+end note
+
+@enduml

@@ -1,0 +1,46 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+rectangle "Deployment Options" #E8F5E9 {
+    
+    package "SystemD Service" #E3F2FD {
+        component [Native Installation] as Native #2196F3
+        component [Auto-restart] as AR #42A5F5
+        component [Log Management] as LM #64B5F6
+    }
+    
+    package "Container Deployment" #FFF3E0 {
+        component [Docker] as Docker #FF9800
+        component [Kubernetes] as K8s #FFA726
+        component [GPU Passthrough] as GPU #FFB74D
+    }
+    
+    package "High Availability" #F3E5F5 {
+        component [Load Balancer] as LB #9C27B0
+        component [Multi-Instance] as MI #AB47BC
+        component [Failover] as FO #BA68C8
+    }
+}
+
+Native --> AR
+Native --> LM
+
+Docker --> GPU
+K8s --> Docker
+
+LB --> MI
+MI --> FO
+
+note bottom of Native
+  Recommended for
+  single-server deployments
+end note
+
+note bottom of K8s
+  For cloud-native
+  scalable deployments
+end note
+
+@enduml

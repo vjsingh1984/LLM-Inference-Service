@@ -6,6 +6,7 @@
 :source-highlighter: rouge
 :experimental:
 :imagesdir: images
+:diagramsdir: diagrams
 
 == Overview
 
@@ -26,32 +27,32 @@ The LLM Inference Service is a cost-effective, production-ready inference server
 
 === What This Solution Provides
 
-**🏗️ Cost-Effective Infrastructure**
+**Cost-Effective Infrastructure**
 * Run 70B+ models on multiple consumer GPUs (RTX 4090, RTX 3090) instead of single datacenter GPU
 * Intelligent tensor splitting across mixed GPU configurations 
 * Support for multi-GPU consumer cards (Tesla M10 equivalent, modern variants) for experimentation
 * Maximize PCIe lane utilization on standard motherboards
 
-**🔧 Unified API Compatibility**
+**Unified API Compatibility**
 * Full compatibility with OpenAI, Ollama, vLLM, and HuggingFace TGI APIs
 * Dynamic model inspection that bypasses artificial context limitations (e.g., 32K models showing as 4K)
 * Think tag preservation for reasoning models
 * Real-time streaming with progress tracking
 
-**📊 Enterprise-Grade Monitoring & Debugging**
+**Enterprise-Grade Monitoring & Debugging**
 * Real-time dashboard with live GPU monitoring (4x Tesla M10 GPUs with temperature, utilization, memory tracking)
 * Multi-API health monitoring with actual endpoint metrics (not simulated data)
 * Interactive model analytics with context length detection and performance insights
 * 15-second refresh monitoring to prevent API overload
 * Single UI for managing 52+ models, API endpoints, and troubleshooting
 
-**🚀 Production Deployment**
+**Production Deployment**
 * One-command SystemD service installation with automatic recovery
 * Zero-downtime configuration updates
 * Load balancing across GPU clusters
 * Enterprise logging and alerting
 
-**🔍 Advanced Features**
+**Advanced Features**
 * Interactive model explorer with performance benchmarking
 * Cost-effectiveness calculator for deployment planning
 * Hardware optimization insights and recommendations
@@ -136,23 +137,23 @@ curl -X POST http://localhost:11436/api/chat/completions \
 |Component |Status |Details
 
 |**Multi-API Support**
-|✅ **Production Ready**
+|Production Ready
 |OpenAI, Ollama, vLLM, HuggingFace TGI
 
 |**GPU Monitoring**
-|✅ **Production Ready**
+|Production Ready
 |4x Tesla M10 with thermal management
 
 |**Dashboard System**
-|✅ **Production Ready**
+|Production Ready
 |6 specialized dashboards, 15s refresh
 
 |**Model Management**
-|✅ **Production Ready**
+|Production Ready
 |52+ models, up to 131K context detection
 
 |**Hardware Optimization**
-|✅ **Production Ready**
+|Production Ready
 |100.0/100 system score, intelligent recommendations
 |===
 

@@ -1,0 +1,58 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+skinparam rectangleBackgroundColor #FFFFFF
+
+rectangle "Dashboard Pages" #E8F5E9 {
+    rectangle "/dashboard" as Main #4CAF50 {
+        (System Overview)
+        (Active Requests)
+        (Quick Stats)
+    }
+    
+    rectangle "/dashboard/gpu" as GPU #2196F3 {
+        (Temperature Monitoring)
+        (Utilization Tracking)
+        (Memory Usage)
+        (Power Consumption)
+    }
+    
+    rectangle "/dashboard/models" as Models #FF9800 {
+        (Model Inventory)
+        (Performance Metrics)
+        (Usage Analytics)
+    }
+    
+    rectangle "/dashboard/apis" as APIs #9C27B0 {
+        (Endpoint Health)
+        (Response Times)
+        (Error Rates)
+    }
+    
+    rectangle "/dashboard/optimization" as Opt #4DB6AC {
+        (System Score)
+        (Recommendations)
+        (Resource Analysis)
+    }
+    
+    rectangle "/dashboard/production" as Prod #F44336 {
+        (Health Score)
+        (Alert Management)
+        (Performance Trends)
+    }
+}
+
+Main --> GPU : Navigate
+Main --> Models : Navigate
+Main --> APIs : Navigate
+Main --> Opt : Navigate
+Main --> Prod : Navigate
+
+note bottom
+  15-second auto-refresh
+  Real-time data updates
+  Responsive design
+end note
+
+@enduml

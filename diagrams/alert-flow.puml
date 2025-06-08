@@ -1,0 +1,41 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+start
+
+:Metric Collection;
+
+if (Threshold Exceeded?) then (yes)
+    :Start Duration Timer;
+    
+    if (Duration Exceeded?) then (yes)
+        if (Critical Threshold?) then (yes)
+            #FF5252:Create Critical Alert;
+        else (no)
+            #FFC107:Create Warning Alert;
+        endif
+        
+        :Send Notifications;
+        note right
+          - Dashboard UI
+          - Log entry
+          - Email (if configured)
+          - Webhook (if configured)
+        end note
+        
+    else (no)
+        :Continue Monitoring;
+    endif
+else (no)
+    if (Active Alert?) then (yes)
+        #4CAF50:Resolve Alert;
+        :Log Resolution;
+    else (no)
+    endif
+endif
+
+stop
+
+@enduml

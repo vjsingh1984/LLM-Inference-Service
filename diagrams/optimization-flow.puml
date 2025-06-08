@@ -1,0 +1,29 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+start
+
+:Collect Performance Metrics;
+
+if (GPU Utilization < 50%?) then (yes)
+    #FFC107:Increase Batch Size;
+else if (Memory Usage > 90%?) then (yes)
+    #FF5252:Reduce Context Size;
+else if (Response Time > Target?) then (yes)
+    if (GPU Available?) then (yes)
+        #2196F3:Increase GPU Layers;
+    else (no)
+        #FF9800:Add More GPUs;
+    endif
+else (no)
+    #4CAF50:Optimal Performance;
+endif
+
+:Apply Configuration;
+:Monitor Results;
+
+stop
+
+@enduml

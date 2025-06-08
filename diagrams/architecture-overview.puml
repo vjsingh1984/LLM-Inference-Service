@@ -1,0 +1,85 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam componentStyle rectangle
+skinparam defaultFontSize 12
+skinparam arrowThickness 2
+
+package "API Gateway Layer" #E8F5E9 {
+    component [Flask API Server] as API #4CAF50
+    component [Route Handlers] as Routes #66BB6A
+    component [Request Validation] as Validation #81C784
+}
+
+package "Request Processing" #E3F2FD {
+    component [Request Adapters] as Adapters #2196F3
+    component [Model Manager] as ModelMgr #42A5F5
+    component [Request Tracker] as Tracker #64B5F6
+}
+
+package "Inference Engine" #FFF3E0 {
+    component [LLAMA Executor] as Executor #FF9800
+    component [GPU Manager] as GPUMgr #FFA726
+    component [Response Processor] as Response #FFB74D
+}
+
+package "Monitoring & Analytics" #F3E5F5 {
+    component [GPU Monitor] as GPUMon #9C27B0
+    component [API Metrics] as Metrics #AB47BC
+    component [Production Monitor] as ProdMon #BA68C8
+}
+
+package "Utilities" #E0F2F1 {
+    component [Model Inspector] as Inspector #009688
+    component [Hardware Optimizer] as HWOpt #26A69A
+    component [Cost Calculator] as CostCalc #4DB6AC
+}
+
+database "Model Storage" as Storage #FFECB3 {
+    folder [GGUF Models] as GGUF
+    folder [Manifests] as Manifests
+}
+
+cloud "External Services" as External #FCE4EC {
+    interface [Ollama CLI] as OllamaCLI #E91E63
+    interface [NVIDIA-SMI] as NVIDIASMI #F06292
+}
+
+API --> Routes
+Routes --> Validation
+Routes --> Adapters
+
+Adapters --> ModelMgr
+Adapters --> Tracker
+Adapters --> Executor
+
+Executor --> GPUMgr
+Executor --> Response
+GPUMgr --> GPUMon
+
+ModelMgr --> Storage
+ModelMgr --> Inspector
+Inspector --> OllamaCLI
+
+GPUMon --> NVIDIASMI
+GPUMon --> Metrics
+Metrics --> ProdMon
+
+HWOpt --> GPUMon
+HWOpt --> ModelMgr
+CostCalc --> ModelMgr
+
+note right of API
+  Handles all API formats:
+  - OpenAI compatible
+  - Ollama compatible
+  - vLLM compatible
+  - HuggingFace TGI
+end note
+
+note bottom of Storage
+  Ollama format with
+  dynamic model inspection
+end note
+
+@enduml

@@ -1,0 +1,39 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+package "Hardware Optimizer" #F3E5F5 {
+    component [System Analyzer] as SA #9C27B0
+    component [Score Calculator] as SC #AB47BC
+    component [Recommendation Engine] as RE #BA68C8
+    
+    package "Analysis Components" {
+        component [CPU Analysis] as CA #E1BEE7
+        component [Memory Analysis] as MA #E1BEE7
+        component [GPU Analysis] as GA #E1BEE7
+        component [Model Analysis] as MLA #E1BEE7
+    }
+}
+
+SA --> CA : Analyze usage
+SA --> MA : Check adequacy
+SA --> GA : GPU efficiency
+SA --> MLA : Model diversity
+
+CA --> SC : CPU score
+MA --> SC : Memory score
+GA --> SC : GPU score
+MLA --> SC : Model score
+
+SC --> RE : Overall score
+
+note right of RE
+  Recommendations:
+  - GPU memory optimization
+  - Tensor split adjustments
+  - Model selection advice
+  - Scaling strategies
+end note
+
+@enduml

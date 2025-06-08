@@ -1,0 +1,43 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+start
+
+:Collect Metrics;
+note right
+  CPU, Memory, GPU,
+  Error Rate, Response Time
+end note
+
+partition "Score Components" {
+    :CPU Score = 100 - CPU%;
+    :Memory Score = 100 - Memory%;
+    :GPU Score = 100 - (Temp/Max * 100);
+    :Error Score = 100 - (ErrorRate * 10);
+    :Response Score = 100 - ((RT - 5000) / 250);
+}
+
+:Calculate Average;
+note right
+  Weighted average of
+  all component scores
+end note
+
+if (Active Alerts?) then (yes)
+    :Reduce Score by (Alerts * 20);
+else (no)
+endif
+
+:Final Health Score;
+note right
+  0-100 scale
+  >80 = Healthy
+  60-80 = Warning
+  <60 = Critical
+end note
+
+stop
+
+@enduml

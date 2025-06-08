@@ -1,0 +1,60 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+node "Production Server" as PS #E8F5E9 {
+    component [SystemD Service] as SystemD #4CAF50
+    component [LLM Inference Service] as LIS #66BB6A
+    component [Web Dashboard] as Dashboard #81C784
+    
+    package "Multi-GPU Cluster" #E3F2FD {
+        component [GPU 0: Tesla M10] as G0 #2196F3
+        component [GPU 1: Tesla M10] as G1 #42A5F5
+        component [GPU 2: Tesla M10] as G2 #64B5F6
+        component [GPU 3: Tesla M10] as G3 #90CAF9
+    }
+}
+
+node "Storage Layer" as SL #FFF3E0 {
+    database [Model Repository] as Models #FF9800
+    database [Configuration] as Config #FFA726
+    database [Logs] as Logs #FFB74D
+}
+
+cloud "Client Access" as CA #F3E5F5 {
+    actor [API Clients] as API #9C27B0
+    actor [Web Users] as Web #AB47BC
+    actor [Monitoring Tools] as Mon #BA68C8
+}
+
+SystemD --> LIS : Manages lifecycle
+LIS --> Dashboard : Serves web interface
+LIS --> G0 : Tensor split 25%
+LIS --> G1 : Tensor split 25%
+LIS --> G2 : Tensor split 25%
+LIS --> G3 : Tensor split 25%
+
+LIS --> Models : Load models
+LIS --> Config : Read settings
+LIS --> Logs : Write logs
+
+API --> LIS : HTTP requests
+Web --> Dashboard : Browser access
+Mon --> LIS : Metrics collection
+
+note right of SystemD
+  Production deployment:
+  - Auto-restart on failure
+  - Resource monitoring
+  - Service isolation
+end note
+
+note bottom of SL
+  Persistent storage:
+  - GGUF model files
+  - Ollama manifests
+  - System configuration
+end note
+
+@enduml

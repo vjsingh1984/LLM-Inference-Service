@@ -1,0 +1,28 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+start
+
+:Model generates response;
+note right: phi4-reasoning, deepseek-r1
+
+if (Contains <think> tags?) then (yes)
+    if (API Format?) then (Ollama)
+        :Preserve tags in response;
+        note right: Matches official behavior
+    else (OpenAI/Others)
+        :Extract think content;
+        :Strip tags from response;
+        :Store for analysis;
+    endif
+else (no)
+    :Standard response;
+endif
+
+:Return formatted response;
+
+stop
+
+@enduml

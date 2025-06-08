@@ -1,0 +1,39 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam packageStyle rectangle
+skinparam defaultFontSize 12
+
+package "LLM Inference Service" #E8F5E9 {
+    component [Unified API Gateway] as Gateway #4CAF50
+    
+    package "API Adapters" #E3F2FD {
+        component [OpenAI Adapter] as OpenAI #2196F3
+        component [Ollama Adapter] as Ollama #42A5F5
+        component [vLLM Adapter] as vLLM #64B5F6
+        component [HuggingFace Adapter] as HF #90CAF9
+    }
+}
+
+actor "OpenAI Client" as OC #4CAF50
+actor "Ollama Client" as OLC #2196F3
+actor "vLLM Client" as VC #FF9800
+actor "HuggingFace Client" as HC #9C27B0
+
+OC --> Gateway : /api/chat/completions
+OLC --> Gateway : /api/generate
+VC --> Gateway : /v1/completions
+HC --> Gateway : /generate
+
+Gateway --> OpenAI
+Gateway --> Ollama
+Gateway --> vLLM
+Gateway --> HF
+
+note bottom of Gateway
+  Automatic format detection
+  Request transformation
+  Response formatting
+end note
+
+@enduml

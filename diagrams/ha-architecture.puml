@@ -1,0 +1,46 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+node "Load Balancer" as LB #4CAF50 {
+    component [HAProxy/NGINX] as Proxy
+}
+
+node "Instance 1" as I1 #E3F2FD {
+    component [LLM Service] as S1 #2196F3
+    component [2x GPU] as G1 #42A5F5
+}
+
+node "Instance 2" as I2 #E3F2FD {
+    component [LLM Service] as S2 #2196F3
+    component [2x GPU] as G2 #42A5F5
+}
+
+node "Shared Storage" as SS #FFF3E0 {
+    database [Model Repository] as MR #FF9800
+    database [Configuration] as CF #FFA726
+}
+
+cloud "Monitoring" as Mon #F3E5F5 {
+    component [Prometheus] as Prom #9C27B0
+    component [Grafana] as Graf #AB47BC
+}
+
+LB --> I1 : Health check
+LB --> I2 : Health check
+
+I1 --> SS : Mount
+I2 --> SS : Mount
+
+S1 --> Prom : Metrics
+S2 --> Prom : Metrics
+
+Prom --> Graf : Visualize
+
+note bottom of LB
+  Round-robin with
+  health checking
+end note
+
+@enduml

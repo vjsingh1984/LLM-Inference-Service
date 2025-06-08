@@ -8,133 +8,54 @@
 
 The service provides comprehensive API compatibility with major LLM providers:
 
-[plantuml, api-compatibility, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam packageStyle rectangle
-skinparam defaultFontSize 12
+.API Compatibility Architecture
+image::../diagrams/api-compatibility.png[API Compatibility,700,500]
 
-package "LLM Inference Service" #E8F5E9 {
-    component [Unified API Gateway] as Gateway #4CAF50
-    
-    package "API Adapters" #E3F2FD {
-        component [OpenAI Adapter] as OpenAI #2196F3
-        component [Ollama Adapter] as Ollama #42A5F5
-        component [vLLM Adapter] as vLLM #64B5F6
-        component [HuggingFace Adapter] as HF #90CAF9
-    }
-}
+**Supported API Formats:**
+* **OpenAI API**: Full compatibility with `/api/chat/completions` endpoint
+* **Ollama API**: Native support for `/api/generate` and `/api/chat` endpoints  
+* **vLLM API**: Compatible with `/v1/completions` endpoint
+* **HuggingFace TGI**: Support for `/generate` endpoint
 
-actor "OpenAI Client" as OC #4CAF50
-actor "Ollama Client" as OLC #2196F3
-actor "vLLM Client" as VC #FF9800
-actor "HuggingFace Client" as HC #9C27B0
-
-OC --> Gateway : /api/chat/completions
-OLC --> Gateway : /api/generate
-VC --> Gateway : /v1/completions
-HC --> Gateway : /generate
-
-Gateway --> OpenAI
-Gateway --> Ollama
-Gateway --> vLLM
-Gateway --> HF
-
-note bottom of Gateway
-  Automatic format detection
-  Request transformation
-  Response formatting
-end note
-
-@enduml
-----
+**Key Features:**
+* Automatic format detection and transformation
+* Unified request processing pipeline
+* Format-specific response handling
+* Think tag preservation for reasoning models
 
 === Dynamic Model Management
 
-[plantuml, model-management, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
+.Model Management System
+image::../diagrams/model-management.png[Model Management,700,500]
 
-package "Model Management System" #E3F2FD {
-    component [Model Manager] as MM #2196F3
-    component [Model Inspector] as MI #42A5F5
-    component [Context Detector] as CD #64B5F6
-    
-    database "Model Storage" #FFF3E0 {
-        folder [GGUF Files] as GGUF #FF9800
-        folder [Manifests] as MF #FFA726
-    }
-}
+**Intelligent Model Discovery:**
+* Real-time Ollama CLI integration for accurate model parameters
+* Dynamic context size detection up to 131K+ tokens
+* Automatic bypass of artificial 4K context limitations
+* Family-based model defaults and optimization
 
-cloud "Ollama CLI" as CLI #9C27B0
-
-MM --> GGUF : Scan models
-MM --> MF : Read metadata
-MM --> MI : Inspect capabilities
-
-MI --> CLI : Query model info
-CLI --> MI : Actual parameters
-
-MI --> CD : Verify context
-CD --> MM : Update metadata
-
-note right of CD
-  Detects up to 131K+ tokens
-  Bypasses artificial limits
-  Family-based defaults
-end note
-
-@enduml
-----
+**Model Inspection Features:**
+* Parameter count and quantization level detection
+* Architecture-specific metadata extraction
+* Context window validation and optimization
+* Performance characteristic analysis
 
 === GPU Management & Optimization
 
-[plantuml, gpu-management, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
+.GPU Management Architecture  
+image::../diagrams/gpu-management.png[GPU Management,700,500]
 
-package "GPU Management" #E8F5E9 {
-    component [GPU Monitor] as GM #4CAF50
-    component [Tensor Splitter] as TS #66BB6A
-    component [Weight Manager] as WM #81C784
-    
-    package "4x Tesla M10 GPUs" #E3F2FD {
-        component [GPU 0\n8GB VRAM] as G0 #2196F3
-        component [GPU 1\n8GB VRAM] as G1 #42A5F5
-        component [GPU 2\n8GB VRAM] as G2 #64B5F6
-        component [GPU 3\n8GB VRAM] as G3 #90CAF9
-    }
-}
+**Multi-GPU Coordination:**
+* 4x Tesla M10 GPU configuration with equal tensor splits (25% each)
+* Real-time temperature monitoring (39-72°C operating range)
+* Power efficiency tracking (25-34W per GPU, 47-65% of limit)
+* Memory utilization optimization (28.5% current usage with room for scaling)
 
-GM --> G0 : Monitor
-GM --> G1 : Monitor
-GM --> G2 : Monitor
-GM --> G3 : Monitor
-
-TS --> G0 : 25% load
-TS --> G1 : 25% load
-TS --> G2 : 25% load
-TS --> G3 : 25% load
-
-WM --> TS : Configure split
-
-note bottom of GM
-  Real-time monitoring:
-  - Temperature: 39-72°C
-  - Utilization: 38.8% avg
-  - Power: 25-34W per GPU
-end note
-
-@enduml
-----
+**Performance Monitoring:**
+* Live GPU utilization tracking (38.8% average)
+* Thermal management with alert thresholds
+* Memory allocation visualization
+* Power consumption efficiency metrics
 
 == Advanced Features
 
@@ -142,146 +63,50 @@ end note
 
 Special handling for reasoning models that use internal thought processes:
 
-[plantuml, think-tag-flow, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
+.Think Tag Processing Flow
+image::../diagrams/think-tag-flow.png[Think Tag Flow,600,400]
 
-start
-
-:Model generates response;
-note right: phi4-reasoning, deepseek-r1
-
-if (Contains <think> tags?) then (yes)
-    if (API Format?) then (Ollama)
-        :Preserve tags in response;
-        note right: Matches official behavior
-    else (OpenAI/Others)
-        :Extract think content;
-        :Strip tags from response;
-        :Store for analysis;
-    endif
-else (no)
-    :Standard response;
-endif
-
-:Return formatted response;
-
-stop
-
-@enduml
-----
+**Processing Logic:**
+* **Ollama Format**: Preserves `<think>...</think>` tags in responses (matches official behavior)
+* **OpenAI Format**: Strips think tags for clean responses, stores content for analysis
+* **Model Support**: phi4-reasoning, deepseek-r1, and other reasoning models
+* **Transparency**: Optional think content exposure for debugging and analysis
 
 === Real-time Monitoring Dashboard
 
-[plantuml, monitoring-features, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
-skinparam rectangleBackgroundColor #FFFFFF
+.Web Dashboard Features
+image::../diagrams/monitoring-features.png[Monitoring Features,800,600]
 
-rectangle "Web Dashboard Features" #E8F5E9 {
-    rectangle "Main Dashboard" #4CAF50 {
-        (System Overview)
-        (Active Requests)
-        (GPU Status)
-        (Model Status)
-    }
-    
-    rectangle "GPU Monitor" #2196F3 {
-        (Temperature Tracking)
-        (Utilization Graphs)
-        (Memory Usage)
-        (Power Consumption)
-    }
-    
-    rectangle "Model Analytics" #FF9800 {
-        (Performance Metrics)
-        (Context Analysis)
-        (Usage Patterns)
-        (Benchmarking)
-    }
-    
-    rectangle "API Health" #9C27B0 {
-        (Endpoint Metrics)
-        (Response Times)
-        (Success Rates)
-        (Error Tracking)
-    }
-    
-    rectangle "Configuration" #4DB6AC {
-        (Dynamic Settings)
-        (Tensor Splits)
-        (Optimization Presets)
-        (Model Parameters)
-    }
-    
-    rectangle "Production Monitor" #F44336 {
-        (System Health Score)
-        (Alert Management)
-        (Performance Trends)
-        (Log Analysis)
-    }
-}
+**Dashboard Capabilities:**
+* **15-second refresh intervals** to prevent API overload
+* **Real-time data updates** with live GPU monitoring
+* **Responsive design** for desktop and mobile access
+* **Export capabilities** for data analysis and reporting
 
-note bottom
-  15-second refresh intervals
-  Real-time data updates
-  Export capabilities
-  Responsive design
-end note
-
-@enduml
-----
+**Specialized Dashboards:**
+* **Main Dashboard**: System overview with active requests and GPU status
+* **GPU Monitor**: Dedicated hardware monitoring with thermal management
+* **Model Analytics**: Performance metrics and context analysis for 52+ models
+* **API Health**: Multi-endpoint monitoring with response times and success rates
+* **Configuration**: Dynamic system settings with optimization presets
+* **Production Monitor**: Health scoring and automated alerting
 
 === Hardware Optimization System
 
-[plantuml, hardware-optimization, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
+.Hardware Optimization Engine
+image::../diagrams/hardware-optimization.png[Hardware Optimization,700,500]
 
-package "Hardware Optimizer" #F3E5F5 {
-    component [System Analyzer] as SA #9C27B0
-    component [Score Calculator] as SC #AB47BC
-    component [Recommendation Engine] as RE #BA68C8
-    
-    package "Analysis Components" {
-        component [CPU Analysis] as CA #E1BEE7
-        component [Memory Analysis] as MA #E1BEE7
-        component [GPU Analysis] as GA #E1BEE7
-        component [Model Analysis] as MLA #E1BEE7
-    }
-}
+**Intelligent Analysis:**
+* **System Scoring**: 0-100 scale optimization score (current: 100.0/100)
+* **Component Analysis**: CPU, Memory, GPU, and Model diversity assessment
+* **Recommendation Engine**: Prioritized suggestions with impact analysis
+* **Performance Optimization**: Real-time configuration adjustments
 
-SA --> CA : Analyze usage
-SA --> MA : Check adequacy
-SA --> GA : GPU efficiency
-SA --> MLA : Model diversity
-
-CA --> SC : CPU score
-MA --> SC : Memory score
-GA --> SC : GPU score
-MLA --> SC : Model score
-
-SC --> RE : Overall score
-
-note right of RE
-  Recommendations:
-  - GPU memory optimization
-  - Tensor split adjustments
-  - Model selection advice
-  - Scaling strategies
-end note
-
-@enduml
-----
+**Optimization Categories:**
+* **Performance**: GPU utilization and tensor split optimization
+* **Stability**: Thermal management and resource allocation
+* **Cost**: Efficiency recommendations and scaling strategies
+* **Scaling**: Hardware upgrade and expansion guidance
 
 == Dashboard Screenshots
 
@@ -304,3 +129,43 @@ Dynamic configuration panel allowing real-time system adjustments and optimizati
 image::../images/optimization-dashboard-screenshot.png[Optimization Dashboard,1200,800]
 
 Hardware optimization insights with scoring, recommendations, and system analysis.
+
+== Production Features
+
+=== Model Analytics
+* **Performance Benchmarking**: Comprehensive model comparison and analysis
+* **Context Detection**: Automatic identification of true context capabilities
+* **Usage Patterns**: Statistical analysis of model utilization
+* **Optimization Recommendations**: Model-specific performance tuning
+
+=== API Metrics Tracking
+* **Real-time Performance**: Actual endpoint response times and success rates
+* **Error Analysis**: Detailed failure tracking and categorization
+* **Usage Statistics**: Request volume and pattern analysis
+* **Health Monitoring**: Automated endpoint health assessment
+
+=== Configuration Management
+* **Dynamic Updates**: Real-time configuration changes without restart
+* **Preset Profiles**: High Performance, Balanced, and Conservative modes
+* **Validation**: Configuration impact analysis and validation
+* **Backup/Restore**: Configuration versioning and rollback capabilities
+
+=== Cost Analysis
+* **Deployment Planning**: TCO analysis for hardware configurations  
+* **ROI Calculator**: Cost-benefit analysis for different setups
+* **Efficiency Metrics**: Performance per dollar optimization
+* **Scaling Recommendations**: Cost-effective expansion strategies
+
+== Integration Features
+
+=== External Service Integration
+* **Ollama CLI**: Direct integration for model inspection and management
+* **NVIDIA Drivers**: Real-time GPU monitoring and management
+* **SystemD**: Production service lifecycle management
+* **Prometheus**: Metrics export for external monitoring systems
+
+=== Development Tools
+* **Debug Mode**: Enhanced logging and troubleshooting capabilities
+* **Testing Framework**: Comprehensive API and system testing
+* **Documentation**: Auto-generated API documentation and examples
+* **Development Server**: Hot-reload development environment

@@ -1,0 +1,74 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+skinparam sequenceArrowThickness 2
+
+actor "Client" as C #4CAF50
+participant "API Gateway" as AG #2196F3
+participant "Request Adapter" as RA #FF9800
+participant "Model Manager" as MM #9C27B0
+participant "LLAMA Executor" as LE #F44336
+participant "GPU Manager" as GM #795548
+participant "Response Processor" as RP #607D8B
+
+C -> AG: HTTP Request
+activate AG
+
+AG -> AG: Validate request
+AG -> RA: Format detection
+activate RA
+
+RA -> RA: Transform to internal format
+RA -> MM: Get model info
+activate MM
+
+MM -> MM: Load model metadata
+MM --> RA: Model configuration
+deactivate MM
+
+RA -> LE: Execute inference
+activate LE
+
+LE -> GM: Request GPU resources
+activate GM
+
+GM -> GM: Allocate tensor splits
+GM -> GM: Monitor utilization
+GM --> LE: GPU allocation
+deactivate GM
+
+LE -> LE: Run LLAMA.cpp inference
+LE -> RP: Process output
+activate RP
+
+RP -> RP: Format response
+RP -> RP: Handle think tags
+RP --> LE: Formatted response
+deactivate RP
+
+LE --> RA: Inference result
+deactivate LE
+
+RA -> RA: Adapt to client format
+RA --> AG: Client-formatted response
+deactivate RA
+
+AG --> C: HTTP Response
+deactivate AG
+
+note right of GM
+  Real-time monitoring:
+  - Temperature tracking
+  - Memory utilization
+  - Power consumption
+end note
+
+note right of RP
+  Format-specific processing:
+  - Think tag preservation
+  - Token estimation
+  - Streaming support
+end note
+
+@enduml

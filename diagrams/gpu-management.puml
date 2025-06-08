@@ -1,0 +1,38 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+package "GPU Management" #E8F5E9 {
+    component [GPU Monitor] as GM #4CAF50
+    component [Tensor Splitter] as TS #66BB6A
+    component [Weight Manager] as WM #81C784
+    
+    package "4x Tesla M10 GPUs" #E3F2FD {
+        component [GPU 0\n8GB VRAM] as G0 #2196F3
+        component [GPU 1\n8GB VRAM] as G1 #42A5F5
+        component [GPU 2\n8GB VRAM] as G2 #64B5F6
+        component [GPU 3\n8GB VRAM] as G3 #90CAF9
+    }
+}
+
+GM --> G0 : Monitor
+GM --> G1 : Monitor
+GM --> G2 : Monitor
+GM --> G3 : Monitor
+
+TS --> G0 : 25% load
+TS --> G1 : 25% load
+TS --> G2 : 25% load
+TS --> G3 : 25% load
+
+WM --> TS : Configure split
+
+note bottom of GM
+  Real-time monitoring:
+  - Temperature: 39-72°C
+  - Utilization: 38.8% avg
+  - Power: 25-34W per GPU
+end note
+
+@enduml

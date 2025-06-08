@@ -1,0 +1,48 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+package "LLM Inference Service" #E8F5E9 {
+    component [API Server] as API #4CAF50
+    component [GPU Monitor] as GPUMon #66BB6A
+    component [API Metrics] as APIMet #81C784
+    component [Production Monitor] as ProdMon #A5D6A7
+}
+
+package "Metrics Collection" #E3F2FD {
+    component [Prometheus Exporter] as Prom #2196F3
+    component [Log Aggregator] as Logs #42A5F5
+    component [Alert Manager] as Alert #64B5F6
+}
+
+package "Visualization" #FFF3E0 {
+    component [Web Dashboard] as Dash #FF9800
+    component [Grafana] as Graf #FFA726
+    component [Alert UI] as AlertUI #FFB74D
+}
+
+package "Storage" #F3E5F5 {
+    database [Metrics DB] as MDB #9C27B0
+    database [Log Storage] as LogDB #AB47BC
+}
+
+API --> GPUMon : GPU stats
+API --> APIMet : Request metrics
+API --> ProdMon : System health
+
+GPUMon --> Prom
+APIMet --> Prom
+ProdMon --> Prom
+
+Prom --> MDB : Store metrics
+Logs --> LogDB : Store logs
+
+MDB --> Graf : Query
+MDB --> Dash : Real-time
+LogDB --> Dash : Logs
+
+ProdMon --> Alert : Threshold violations
+Alert --> AlertUI : Notifications
+
+@enduml

@@ -46,55 +46,15 @@ This guide covers deployment options for the LLM Inference Service in production
 
 == Deployment Architecture
 
-[plantuml, deployment-options, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
+.Deployment Options Overview
+image::../diagrams/deployment-options.png[Deployment Options,800,600]
 
-rectangle "Deployment Options" #E8F5E9 {
-    
-    package "SystemD Service" #E3F2FD {
-        component [Native Installation] as Native #2196F3
-        component [Auto-restart] as AR #42A5F5
-        component [Log Management] as LM #64B5F6
-    }
-    
-    package "Container Deployment" #FFF3E0 {
-        component [Docker] as Docker #FF9800
-        component [Kubernetes] as K8s #FFA726
-        component [GPU Passthrough] as GPU #FFB74D
-    }
-    
-    package "High Availability" #F3E5F5 {
-        component [Load Balancer] as LB #9C27B0
-        component [Multi-Instance] as MI #AB47BC
-        component [Failover] as FO #BA68C8
-    }
-}
+The service supports multiple deployment patterns:
 
-Native --> AR
-Native --> LM
-
-Docker --> GPU
-K8s --> Docker
-
-LB --> MI
-MI --> FO
-
-note bottom of Native
-  Recommended for
-  single-server deployments
-end note
-
-note bottom of K8s
-  For cloud-native
-  scalable deployments
-end note
-
-@enduml
-----
+* **SystemD Service**: Native installation with automatic lifecycle management
+* **Container Deployment**: Docker-based deployment with GPU passthrough
+* **High Availability**: Multi-instance setup with load balancing
+* **Cloud-Native**: Kubernetes deployment for scalable cloud environments
 
 == SystemD Service Deployment
 
@@ -288,55 +248,8 @@ docker-compose down
 
 == High Availability Setup
 
-[plantuml, ha-architecture, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
-
-node "Load Balancer" as LB #4CAF50 {
-    component [HAProxy/NGINX] as Proxy
-}
-
-node "Instance 1" as I1 #E3F2FD {
-    component [LLM Service] as S1 #2196F3
-    component [2x GPU] as G1 #42A5F5
-}
-
-node "Instance 2" as I2 #E3F2FD {
-    component [LLM Service] as S2 #2196F3
-    component [2x GPU] as G2 #42A5F5
-}
-
-node "Shared Storage" as SS #FFF3E0 {
-    database [Model Repository] as MR #FF9800
-    database [Configuration] as CF #FFA726
-}
-
-cloud "Monitoring" as Mon #F3E5F5 {
-    component [Prometheus] as Prom #9C27B0
-    component [Grafana] as Graf #AB47BC
-}
-
-LB --> I1 : Health check
-LB --> I2 : Health check
-
-I1 --> SS : Mount
-I2 --> SS : Mount
-
-S1 --> Prom : Metrics
-S2 --> Prom : Metrics
-
-Prom --> Graf : Visualize
-
-note bottom of LB
-  Round-robin with
-  health checking
-end note
-
-@enduml
-----
+.High Availability Architecture
+image::../diagrams/ha-architecture.png[HA Architecture,800,600]
 
 === HAProxy Configuration
 
@@ -364,6 +277,20 @@ backend llm_backend
     server llm1 192.168.1.10:11436 check
     server llm2 192.168.1.11:11436 check
 ----
+
+=== Load Balancer Setup
+
+**Features:**
+* Round-robin load balancing with health checks
+* Automatic failover for failed instances
+* Session persistence for streaming requests
+* Real-time monitoring and metrics
+
+**Health Check Configuration:**
+* Endpoint: `/health`
+* Interval: 30 seconds
+* Timeout: 5 seconds
+* Failure threshold: 3 consecutive failures
 
 == Security Considerations
 
@@ -543,3 +470,29 @@ default_context_size: 32768  # For limited VRAM
 request_timeout: 1800
 max_concurrent_requests: 10  # Adjust based on GPU memory
 ----
+
+== Production Checklist
+
+=== Pre-Deployment
+- [ ] Hardware requirements verified
+- [ ] Dependencies installed and tested
+- [ ] Configuration file reviewed and customized
+- [ ] SSL certificates configured (if applicable)
+- [ ] Firewall rules implemented
+- [ ] Backup strategy defined
+
+=== Post-Deployment
+- [ ] Service health check passing
+- [ ] GPU monitoring active
+- [ ] API endpoints responsive
+- [ ] Dashboard accessible
+- [ ] Logging configuration verified
+- [ ] Monitoring alerts configured
+- [ ] Performance benchmarks established
+
+=== Ongoing Maintenance
+- [ ] Regular log rotation
+- [ ] Performance monitoring
+- [ ] Security updates
+- [ ] Configuration backups
+- [ ] Capacity planning reviews

@@ -1,0 +1,35 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+package "Model Management System" #E3F2FD {
+    component [Model Manager] as MM #2196F3
+    component [Model Inspector] as MI #42A5F5
+    component [Context Detector] as CD #64B5F6
+    
+    database "Model Storage" #FFF3E0 {
+        folder [GGUF Files] as GGUF #FF9800
+        folder [Manifests] as MF #FFA726
+    }
+}
+
+cloud "Ollama CLI" as CLI #9C27B0
+
+MM --> GGUF : Scan models
+MM --> MF : Read metadata
+MM --> MI : Inspect capabilities
+
+MI --> CLI : Query model info
+CLI --> MI : Actual parameters
+
+MI --> CD : Verify context
+CD --> MM : Update metadata
+
+note right of CD
+  Detects up to 131K+ tokens
+  Bypasses artificial limits
+  Family-based defaults
+end note
+
+@enduml

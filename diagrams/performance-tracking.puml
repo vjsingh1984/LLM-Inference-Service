@@ -1,0 +1,37 @@
+@startuml
+!theme blueprint
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+
+participant "Client" as C #4CAF50
+participant "API Gateway" as API #2196F3
+participant "Metrics Collector" as MC #FF9800
+participant "Dashboard" as D #9C27B0
+
+C -> API: Request
+activate API
+
+API -> MC: Start timer
+activate MC
+MC --> API: Request ID
+deactivate MC
+
+API -> API: Process request
+
+API -> MC: End timer
+activate MC
+MC -> MC: Calculate metrics
+note right
+  - Response time
+  - Success/failure
+  - Token count
+  - Model used
+end note
+
+MC -> D: Update dashboard
+deactivate MC
+
+API -> C: Response
+deactivate API
+
+@enduml

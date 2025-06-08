@@ -8,57 +8,16 @@ The LLM Inference Service provides comprehensive monitoring capabilities for pro
 
 == Monitoring Architecture
 
-[plantuml, monitoring-architecture, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
+.Monitoring System Architecture
+image::../diagrams/monitoring-architecture.png[Monitoring Architecture,800,600]
 
-package "LLM Inference Service" #E8F5E9 {
-    component [API Server] as API #4CAF50
-    component [GPU Monitor] as GPUMon #66BB6A
-    component [API Metrics] as APIMet #81C784
-    component [Production Monitor] as ProdMon #A5D6A7
-}
+The monitoring system consists of:
 
-package "Metrics Collection" #E3F2FD {
-    component [Prometheus Exporter] as Prom #2196F3
-    component [Log Aggregator] as Logs #42A5F5
-    component [Alert Manager] as Alert #64B5F6
-}
-
-package "Visualization" #FFF3E0 {
-    component [Web Dashboard] as Dash #FF9800
-    component [Grafana] as Graf #FFA726
-    component [Alert UI] as AlertUI #FFB74D
-}
-
-package "Storage" #F3E5F5 {
-    database [Metrics DB] as MDB #9C27B0
-    database [Log Storage] as LogDB #AB47BC
-}
-
-API --> GPUMon : GPU stats
-API --> APIMet : Request metrics
-API --> ProdMon : System health
-
-GPUMon --> Prom
-APIMet --> Prom
-ProdMon --> Prom
-
-Prom --> MDB : Store metrics
-Logs --> LogDB : Store logs
-
-MDB --> Graf : Query
-MDB --> Dash : Real-time
-LogDB --> Dash : Logs
-
-ProdMon --> Alert : Threshold violations
-Alert --> AlertUI : Notifications
-
-@enduml
-----
+* **LLM Inference Service**: Core service with integrated metrics collection
+* **Metrics Collection**: Prometheus exporters and log aggregation
+* **Visualization**: Web dashboards and Grafana integration
+* **Storage**: Time-series database for metrics and log storage
+* **Alerting**: Automated alert management and notifications
 
 == Web Dashboard
 
@@ -66,67 +25,14 @@ Alert --> AlertUI : Notifications
 
 The service includes a comprehensive web dashboard accessible at `http://localhost:11436/dashboard`.
 
-[plantuml, dashboard-pages, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
-skinparam rectangleBackgroundColor #FFFFFF
+.Dashboard Pages Architecture
+image::../diagrams/dashboard-pages.png[Dashboard Pages,700,500]
 
-rectangle "Dashboard Pages" #E8F5E9 {
-    rectangle "/dashboard" as Main #4CAF50 {
-        (System Overview)
-        (Active Requests)
-        (Quick Stats)
-    }
-    
-    rectangle "/dashboard/gpu" as GPU #2196F3 {
-        (Temperature Monitoring)
-        (Utilization Tracking)
-        (Memory Usage)
-        (Power Consumption)
-    }
-    
-    rectangle "/dashboard/models" as Models #FF9800 {
-        (Model Inventory)
-        (Performance Metrics)
-        (Usage Analytics)
-    }
-    
-    rectangle "/dashboard/apis" as APIs #9C27B0 {
-        (Endpoint Health)
-        (Response Times)
-        (Error Rates)
-    }
-    
-    rectangle "/dashboard/optimization" as Opt #4DB6AC {
-        (System Score)
-        (Recommendations)
-        (Resource Analysis)
-    }
-    
-    rectangle "/dashboard/production" as Prod #F44336 {
-        (Health Score)
-        (Alert Management)
-        (Performance Trends)
-    }
-}
-
-Main --> GPU : Navigate
-Main --> Models : Navigate
-Main --> APIs : Navigate
-Main --> Opt : Navigate
-Main --> Prod : Navigate
-
-note bottom
-  15-second auto-refresh
-  Real-time data updates
-  Responsive design
-end note
-
-@enduml
-----
+**Dashboard Features:**
+* **15-second auto-refresh** to prevent API overload
+* **Real-time data updates** with live GPU monitoring
+* **Responsive design** for desktop and mobile access
+* **Export capabilities** for data analysis and reporting
 
 === Key Metrics Tracked
 
@@ -171,52 +77,20 @@ end note
 
 === Health Score Calculation
 
-[plantuml, health-score, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
+.Health Score Calculation Flow
+image::../diagrams/health-score.png[Health Score,600,400]
 
-start
+**Scoring Components:**
+* **CPU Score**: 100 - CPU utilization percentage
+* **Memory Score**: 100 - Memory utilization percentage  
+* **GPU Score**: 100 - (Temperature/Max × 100)
+* **Error Score**: 100 - (Error rate × 10)
+* **Response Score**: 100 - ((Response time - 5000) / 250)
 
-:Collect Metrics;
-note right
-  CPU, Memory, GPU,
-  Error Rate, Response Time
-end note
-
-partition "Score Components" {
-    :CPU Score = 100 - CPU%;
-    :Memory Score = 100 - Memory%;
-    :GPU Score = 100 - (Temp/Max * 100);
-    :Error Score = 100 - (ErrorRate * 10);
-    :Response Score = 100 - ((RT - 5000) / 250);
-}
-
-:Calculate Average;
-note right
-  Weighted average of
-  all component scores
-end note
-
-if (Active Alerts?) then (yes)
-    :Reduce Score by (Alerts * 20);
-else (no)
-endif
-
-:Final Health Score;
-note right
-  0-100 scale
-  >80 = Healthy
-  60-80 = Warning
-  <60 = Critical
-end note
-
-stop
-
-@enduml
-----
+**Final Calculation:**
+* Weighted average of all component scores
+* Penalty reduction for active alerts (20 points per alert)
+* Scale: 0-100 (>80 = Healthy, 60-80 = Warning, <60 = Critical)
 
 === Alert Configuration
 
@@ -254,52 +128,18 @@ alerts:
 
 === Alert Types
 
-[plantuml, alert-flow, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
+.Alert Processing Flow
+image::../diagrams/alert-flow.png[Alert Flow,600,500]
 
-start
+**Alert Lifecycle:**
+1. **Metric Collection**: Continuous monitoring of system metrics
+2. **Threshold Evaluation**: Check against warning and critical thresholds
+3. **Duration Timer**: Prevent false positives with sustained threshold violations
+4. **Alert Creation**: Generate warning or critical alerts based on severity
+5. **Notification**: Send alerts via dashboard, logs, email, or webhooks
+6. **Resolution**: Automatic resolution when metrics return to normal
 
-:Metric Collection;
-
-if (Threshold Exceeded?) then (yes)
-    :Start Duration Timer;
-    
-    if (Duration Exceeded?) then (yes)
-        if (Critical Threshold?) then (yes)
-            #FF5252:Create Critical Alert;
-        else (no)
-            #FFC107:Create Warning Alert;
-        endif
-        
-        :Send Notifications;
-        note right
-          - Dashboard UI
-          - Log entry
-          - Email (if configured)
-          - Webhook (if configured)
-        end note
-        
-    else (no)
-        :Continue Monitoring;
-    endif
-else (no)
-    if (Active Alert?) then (yes)
-        #4CAF50:Resolve Alert;
-        :Log Resolution;
-    else (no)
-    endif
-endif
-
-stop
-
-@enduml
-----
-
-== GPU Monitoring
+## GPU Monitoring
 
 === Metrics Collected
 
@@ -381,46 +221,15 @@ Track performance for each API endpoint:
 
 === Performance Tracking
 
-[plantuml, performance-tracking, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
+.Performance Tracking Flow
+image::../diagrams/performance-tracking.png[Performance Tracking,700,500]
 
-participant "Client" as C #4CAF50
-participant "API Gateway" as API #2196F3
-participant "Metrics Collector" as MC #FF9800
-participant "Dashboard" as D #9C27B0
-
-C -> API: Request
-activate API
-
-API -> MC: Start timer
-activate MC
-MC --> API: Request ID
-deactivate MC
-
-API -> API: Process request
-
-API -> MC: End timer
-activate MC
-MC -> MC: Calculate metrics
-note right
-  - Response time
-  - Success/failure
-  - Token count
-  - Model used
-end note
-
-MC -> D: Update dashboard
-deactivate MC
-
-API -> C: Response
-deactivate API
-
-@enduml
-----
+**Tracking Process:**
+1. **Request Initiation**: Client sends request to API gateway
+2. **Timer Start**: Metrics collector starts response time measurement
+3. **Request Processing**: API processes request through inference pipeline
+4. **Metrics Calculation**: Calculate response time, success/failure, token count
+5. **Dashboard Update**: Real-time dashboard updates with latest metrics
 
 == Log Management
 
@@ -491,38 +300,14 @@ Configure log rotation in `/etc/logrotate.d/llm-inference`:
 
 === Monitoring-Based Optimization
 
-[plantuml, optimization-flow, svg]
-----
-@startuml
-!theme blueprint
-skinparam backgroundColor #FAFAFA
-skinparam defaultFontSize 12
+.Optimization Decision Flow
+image::../diagrams/optimization-flow.png[Optimization Flow,600,400]
 
-start
-
-:Collect Performance Metrics;
-
-if (GPU Utilization < 50%?) then (yes)
-    #FFC107:Increase Batch Size;
-else if (Memory Usage > 90%?) then (yes)
-    #FF5252:Reduce Context Size;
-else if (Response Time > Target?) then (yes)
-    if (GPU Available?) then (yes)
-        #2196F3:Increase GPU Layers;
-    else (no)
-        #FF9800:Add More GPUs;
-    endif
-else (no)
-    #4CAF50:Optimal Performance;
-endif
-
-:Apply Configuration;
-:Monitor Results;
-
-stop
-
-@enduml
-----
+**Optimization Logic:**
+* **Low GPU Utilization (<50%)**: Increase batch size for better throughput
+* **High Memory Usage (>90%)**: Reduce context size to prevent OOM errors
+* **High Response Time**: Increase GPU layers or add more GPUs
+* **Optimal Performance**: Maintain current configuration
 
 === Key Performance Indicators
 
@@ -627,3 +412,29 @@ Import `monitoring/grafana-dashboard.json` for pre-configured panels:
 |Resource contention, driver issues
 |Check system logs and dmesg
 |===
+
+== Monitoring Best Practices
+
+=== Dashboard Usage
+* Monitor main dashboard for system overview
+* Use specialized dashboards for detailed analysis
+* Set up automated alerts for critical metrics
+* Export data for trend analysis and capacity planning
+
+=== Alert Configuration
+* Set appropriate warning and critical thresholds
+* Use duration-based triggering to prevent false positives
+* Configure multiple notification channels for redundancy
+* Regular review and tuning of alert thresholds
+
+=== Performance Monitoring
+* Establish baseline performance metrics
+* Monitor trends for capacity planning
+* Use optimization insights for system tuning
+* Regular performance reviews and adjustments
+
+=== Log Analysis
+* Configure appropriate log levels for environment
+* Implement log rotation to manage disk space
+* Use structured logging for better analysis
+* Regular log review for security and performance insights
