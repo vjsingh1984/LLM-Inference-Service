@@ -5,7 +5,7 @@
 The service provides comprehensive API compatibility with major LLM providers:
 
 .API Compatibility Architecture
-image::images/api-compatibility.png[API Compatibility,700,500]
+image::api-compatibility.png[API Compatibility,700,500]
 
 **Supported API Formats:**
 * **OpenAI API**: Full compatibility with `/api/chat/completions` endpoint
@@ -22,7 +22,7 @@ image::images/api-compatibility.png[API Compatibility,700,500]
 === Dynamic Model Management
 
 .Model Management System
-image::images/model-management.png[Model Management,700,500]
+image::model-management.png[Model Management,700,500]
 
 **Intelligent Model Discovery:**
 * Real-time Ollama CLI integration for accurate model parameters
@@ -39,7 +39,7 @@ image::images/model-management.png[Model Management,700,500]
 === GPU Management & Optimization
 
 .GPU Management Architecture  
-image::images/gpu-management.png[GPU Management,700,500]
+image::gpu-management.png[GPU Management,700,500]
 
 **Multi-GPU Coordination:**
 * 4x Tesla M10 GPU configuration with equal tensor splits (25% each)
@@ -60,7 +60,7 @@ image::images/gpu-management.png[GPU Management,700,500]
 Special handling for reasoning models that use internal thought processes:
 
 .Think Tag Processing Flow
-image::images/think-tag-flow.png[Think Tag Flow,600,400]
+image::think-tag-flow.png[Think Tag Flow,600,400]
 
 **Processing Logic:**
 * **Ollama Format**: Preserves `<think>...</think>` tags in responses (matches official behavior)
@@ -71,7 +71,7 @@ image::images/think-tag-flow.png[Think Tag Flow,600,400]
 === Real-time Monitoring Dashboard
 
 .Web Dashboard Features
-image::images/monitoring-features.png[Monitoring Features,800,600]
+image::monitoring-features.png[Monitoring Features,800,600]
 
 **Dashboard Capabilities:**
 * **15-second refresh intervals** to prevent API overload
@@ -90,7 +90,7 @@ image::images/monitoring-features.png[Monitoring Features,800,600]
 === Hardware Optimization System
 
 .Hardware Optimization Engine
-image::images/hardware-optimization.png[Hardware Optimization,700,500]
+image::hardware-optimization.png[Hardware Optimization,700,500]
 
 **Intelligent Analysis:**
 * **System Scoring**: 0-100 scale optimization score (current: 100.0/100)
@@ -107,22 +107,22 @@ image::images/hardware-optimization.png[Hardware Optimization,700,500]
 === Dashboard Screenshots
 
 === Main Dashboard
-image::images/llm-service-main-dashboard.png[Main Dashboard,1200,800]
+image::llm-service-main-dashboard.png[Main Dashboard,1200,800]
 
 The main dashboard provides a unified view of system status, active requests, and real-time GPU monitoring.
 
 === GPU Monitor Dashboard
-image::images/llm-service-main-gpudetail.png[GPU Monitor,1200,800]
+image::llm-service-main-gpudetail.png[GPU Monitor,1200,800]
 
 Detailed GPU monitoring with temperature, utilization, and memory tracking for each Tesla M10 GPU.
 
 === Configuration Panel
-image::images/llm-service-main-configset.png[Configuration Panel,1200,800]
+image::llm-service-main-configset.png[Configuration Panel,1200,800]
 
 Dynamic configuration panel allowing real-time system adjustments and optimization presets.
 
 === Optimization Dashboard
-image::images/optimization-dashboard-screenshot.png[Optimization Dashboard,1200,800]
+image::optimization-dashboard-screenshot.png[Optimization Dashboard,1200,800]
 
 Hardware optimization insights with scoring, recommendations, and system analysis.
 
