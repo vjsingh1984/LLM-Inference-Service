@@ -110,11 +110,11 @@ include::docs/monitoring.adoc[leveloffset=+1]
 # Install user-level SystemD service
 ./install-user-service.sh
 
-# Start the service (runs on port 11436)
+# Start the service (runs on port 11435)
 systemctl --user start llm-inference
 
 # Access web dashboard
-open http://localhost:11436/dashboard
+open http://localhost:11435/dashboard
 ----
 
 === Test API
@@ -122,10 +122,10 @@ open http://localhost:11436/dashboard
 [source,bash]
 ----
 # List models
-curl http://localhost:11436/api/models
+curl http://localhost:11435/api/models
 
 # Test with fast model
-curl -X POST http://localhost:11436/api/chat/completions \
+curl -X POST http://localhost:11435/api/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model": "tinyllama:1.1b-chat", "messages": [{"role": "user", "content": "Hi"}]}'
 ----

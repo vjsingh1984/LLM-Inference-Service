@@ -23,7 +23,7 @@ The monitoring system consists of:
 
 === Dashboard Overview
 
-The service includes a comprehensive web dashboard accessible at `http://localhost:11436/dashboard`.
+The service includes a comprehensive web dashboard accessible at `http://localhost:11435/dashboard`.
 
 .Dashboard Pages Architecture
 image::../diagrams/dashboard-pages.png[Dashboard Pages,700,500]

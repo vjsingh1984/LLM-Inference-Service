@@ -13,7 +13,7 @@ Currently, the service does not require authentication. In production deployment
 == Base URL
 
 ```
-http://localhost:11436
+http://localhost:11435
 ```
 
 == Chat Completion APIs

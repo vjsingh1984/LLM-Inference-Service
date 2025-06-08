@@ -193,10 +193,10 @@ RUN cd /opt && \
     make -j$(nproc)
 
 # Expose port
-EXPOSE 11436
+EXPOSE 11435
 
 # Run the service
-CMD ["python3", "-m", "ollama_server.main", "--port", "11436"]
+CMD ["python3", "-m", "ollama_server.main", "--port", "11435"]
 ----
 
 === Docker Compose
@@ -211,7 +211,7 @@ services:
     image: llm-inference:latest
     container_name: llm-inference
     ports:
-      - "11436:11436"
+      - "11435:11435"
     volumes:
       - /opt/llm/models:/opt/llm/models
       - ./config:/app/config
@@ -274,8 +274,8 @@ backend llm_backend
     balance roundrobin
     option httpchk GET /health
     
-    server llm1 192.168.1.10:11436 check
-    server llm2 192.168.1.11:11436 check
+    server llm1 192.168.1.10:11435 check
+    server llm2 192.168.1.11:11435 check
 ----
 
 === Load Balancer Setup
@@ -301,7 +301,7 @@ backend llm_backend
 ----
 # Allow only necessary ports
 sudo ufw allow 22/tcp     # SSH
-sudo ufw allow 11436/tcp  # LLM Service
+sudo ufw allow 11435/tcp  # LLM Service
 sudo ufw enable
 ----
 
@@ -316,7 +316,7 @@ server {
     ssl_certificate_key /etc/ssl/private/llm.key;
     
     location / {
-        proxy_pass http://localhost:11436;
+        proxy_pass http://localhost:11435;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -355,7 +355,7 @@ global:
 scrape_configs:
   - job_name: 'llm-inference'
     static_configs:
-      - targets: ['localhost:11436']
+      - targets: ['localhost:11435']
     metrics_path: '/metrics'
 ----
 
@@ -438,7 +438,7 @@ Enable debug logging:
 log_level: DEBUG
 
 # Or run manually
-python -m ollama_server.main --debug --port 11436
+python -m ollama_server.main --debug --port 11435
 ----
 
 == Performance Tuning
