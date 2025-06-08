@@ -258,7 +258,7 @@ let modelData = {};
 // Initialize model analytics
 document.addEventListener('DOMContentLoaded', function() {
     initializeModelCharts();
-    startAutoRefresh(refreshModelData, 5000); // 5-second refresh for model data
+    startAutoRefresh(refreshModelData, 15000); // 15-second refresh for model data
 });
 
 function initializeModelCharts() {
@@ -446,7 +446,7 @@ function initializeModelCharts() {
 async function refreshModelData() {
     try {
         // Fetch dashboard data which includes models
-        const response = await fetch('/dashboard/data');
+        const response = await fetch('/api/metrics/dashboard');
         if (!response.ok) throw new Error('Failed to fetch model data');
         
         const data = await response.json();

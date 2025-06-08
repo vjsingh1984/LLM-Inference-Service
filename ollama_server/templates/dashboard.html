@@ -286,7 +286,7 @@ let dashboardData = {};
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
-    startAutoRefresh(refreshAllData, 2000); // 2-second refresh for dashboard
+    startAutoRefresh(refreshAllData, 15000); // 15-second refresh for dashboard
 });
 
 function initializeCharts() {
@@ -347,7 +347,7 @@ function initializeCharts() {
 async function refreshAllData() {
     try {
         // Fetch dashboard data
-        const response = await fetch('/dashboard/data');
+        const response = await fetch('/api/metrics/dashboard');
         if (!response.ok) throw new Error('Failed to fetch dashboard data');
         
         dashboardData = await response.json();

@@ -82,7 +82,9 @@ class GPUMonitor:
                 handle = self.pynvml.nvmlDeviceGetHandleByIndex(i)
                 
                 # Basic info
-                name = self.pynvml.nvmlDeviceGetName(handle).decode('utf-8')
+                name = self.pynvml.nvmlDeviceGetName(handle)
+                if isinstance(name, bytes):
+                    name = name.decode('utf-8')
                 
                 # Utilization
                 util = self.pynvml.nvmlDeviceGetUtilizationRates(handle)

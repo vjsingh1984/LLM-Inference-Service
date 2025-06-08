@@ -256,7 +256,7 @@ let maxHistoryPoints = 60; // 2 minutes at 2-second intervals
 // Initialize GPU monitor
 document.addEventListener('DOMContentLoaded', function() {
     initializeGPUCharts();
-    startAutoRefresh(refreshGPUData, 2000); // 2-second refresh for GPU data
+    startAutoRefresh(refreshGPUData, 15000); // 15-second refresh for GPU data
 });
 
 function initializeGPUCharts() {
@@ -392,7 +392,7 @@ function initializeGPUCharts() {
 
 async function refreshGPUData() {
     try {
-        const response = await fetch('/api/dashboard/gpu-metrics');
+        const response = await fetch('/api/metrics/gpu');
         if (!response.ok) throw new Error('Failed to fetch GPU metrics');
         
         const data = await response.json();

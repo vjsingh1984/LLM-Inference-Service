@@ -350,7 +350,7 @@ let activityLog = [];
 document.addEventListener('DOMContentLoaded', function() {
     initializeAPICharts();
     initializeCompatibilityMatrix();
-    startAutoRefresh(refreshAPIHealth, 3000); // 3-second refresh for API health
+    startAutoRefresh(refreshAPIHealth, 15000); // 15-second refresh for API health
 });
 
 function initializeAPICharts() {
@@ -542,15 +542,17 @@ function getCompatibilityIcon(supported) {
 
 async function refreshAPIHealth() {
     try {
-        // In a real implementation, this would check actual API endpoints
-        // For now, we'll simulate API health data
-        const simulatedData = generateSimulatedAPIHealth();
-        apiHealthData = simulatedData;
+        // Fetch real API metrics from the server
+        const response = await fetch('/api/metrics/apis');
+        if (!response.ok) throw new Error('Failed to fetch API metrics');
         
-        updateAPIStatusCards(simulatedData.endpoints);
-        updateAPIMetricsTable(simulatedData.endpoints);
-        updateAPICharts(simulatedData);
-        updateActivityLog(simulatedData);
+        const realData = await response.json();
+        apiHealthData = realData;
+        
+        updateAPIStatusCards(realData.endpoints);
+        updateAPIMetricsTable(realData.endpoints);
+        updateAPICharts(realData);
+        updateActivityLog(realData);
         
     } catch (error) {
         console.error('Error refreshing API health:', error);
