@@ -26,6 +26,7 @@ from ..adapters import (
 from .handlers import RequestHandler
 from ..utils.model_inspector import model_inspector
 from ..utils.gpu_monitor import gpu_monitor
+from ..utils.weight_distribution import weight_manager
 
 logger = logging.getLogger(__name__)
 
@@ -446,6 +447,158 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
             })
         except Exception as e:
             logger.exception("Error applying configuration")
+            return jsonify({'error': str(e)}), 500
+
+    @api_bp.route('/api/dashboard/weight-distribution', methods=['GET'])
+    def get_weight_distribution():
+        """Get current weight distribution configuration."""
+        try:
+            gpu_metrics = gpu_monitor.to_dict()
+            if not gpu_metrics:
+                return jsonify({'error': 'GPU metrics not available'}), 503
+            
+            # Create or get current configuration
+            if not weight_manager.current_config:
+                config = weight_manager.create_config_from_gpu_data(gpu_metrics)
+            else:
+                config = weight_manager.current_config
+            
+            return jsonify(weight_manager.get_config_summary(config))
+        except Exception as e:
+            logger.exception("Error getting weight distribution")
+            return jsonify({'error': str(e)}), 500
+    
+    @api_bp.route('/api/dashboard/weight-distribution', methods=['POST'])
+    def update_weight_distribution():
+        """Update weight distribution configuration."""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No configuration data provided'}), 400
+            
+            gpu_metrics = gpu_monitor.to_dict()
+            if not gpu_metrics:
+                return jsonify({'error': 'GPU metrics not available'}), 503
+            
+            if 'preset' in data:
+                # Apply preset configuration
+                preset_name = data['preset']
+                model_name = data.get('model_name')
+                config = weight_manager.apply_preset(preset_name, gpu_metrics, model_name)
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': f'Applied {preset_name} preset',
+                    'config': weight_manager.get_config_summary(config)
+                })
+            
+            elif 'gpu_weights' in data:
+                # Apply custom weights
+                gpu_weights = data['gpu_weights']  # List of {gpu_id: int, weight: float}
+                
+                # Ensure we have a current config
+                if not weight_manager.current_config:
+                    weight_manager.create_config_from_gpu_data(gpu_metrics)
+                
+                # Update individual GPU weights
+                for gpu_weight in gpu_weights:
+                    gpu_id = gpu_weight.get('gpu_id')
+                    weight = gpu_weight.get('weight', 0.0)
+                    if gpu_id is not None:
+                        weight_manager.update_weight(gpu_id, weight)
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Updated custom weight distribution',
+                    'config': weight_manager.get_config_summary()
+                })
+            
+            elif 'model_config' in data:
+                # Update model-specific configuration
+                model_config = data['model_config']
+                if weight_manager.current_config:
+                    if 'context_size' in model_config:
+                        weight_manager.current_config.context_size = model_config['context_size']
+                    if 'batch_size' in model_config:
+                        weight_manager.current_config.batch_size = model_config['batch_size']
+                    if 'gpu_layers' in model_config:
+                        weight_manager.current_config.gpu_layers = model_config['gpu_layers']
+                    if 'model_name' in model_config:
+                        weight_manager.current_config.model_name = model_config['model_name']
+                    
+                    # Revalidate configuration
+                    weight_manager.validate_config(weight_manager.current_config)
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Updated model configuration',
+                    'config': weight_manager.get_config_summary()
+                })
+            
+            else:
+                return jsonify({'error': 'Invalid configuration data'}), 400
+                
+        except Exception as e:
+            logger.exception("Error updating weight distribution")
+            return jsonify({'error': str(e)}), 500
+    
+    @api_bp.route('/api/dashboard/weight-distribution/presets', methods=['GET'])
+    def get_weight_presets():
+        """Get available weight distribution presets."""
+        try:
+            return jsonify({
+                'presets': weight_manager.preset_configs
+            })
+        except Exception as e:
+            logger.exception("Error getting weight presets")
+            return jsonify({'error': str(e)}), 500
+    
+    @api_bp.route('/api/dashboard/weight-distribution/validate', methods=['POST'])
+    def validate_weight_distribution():
+        """Validate a weight distribution configuration."""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No configuration data provided'}), 400
+            
+            gpu_metrics = gpu_monitor.to_dict()
+            if not gpu_metrics:
+                return jsonify({'error': 'GPU metrics not available'}), 503
+            
+            # Create temporary configuration for validation
+            config = weight_manager.create_config_from_gpu_data(gpu_metrics)
+            
+            # Apply provided weights
+            if 'gpu_weights' in data:
+                gpu_weights = data['gpu_weights']
+                for gpu_weight in gpu_weights:
+                    gpu_id = gpu_weight.get('gpu_id')
+                    weight = gpu_weight.get('weight', 0.0)
+                    for gpu_config in config.gpu_configs:
+                        if gpu_config.gpu_id == gpu_id:
+                            gpu_config.weight_percentage = weight
+                            break
+            
+            # Update model configuration if provided
+            if 'model_config' in data:
+                model_config = data['model_config']
+                config.context_size = model_config.get('context_size', config.context_size)
+                config.batch_size = model_config.get('batch_size', config.batch_size)
+                config.gpu_layers = model_config.get('gpu_layers', config.gpu_layers)
+                config.model_name = model_config.get('model_name', config.model_name)
+            
+            # Validate configuration
+            weight_manager.validate_config(config)
+            
+            return jsonify({
+                'is_valid': config.is_valid,
+                'validation_errors': config.validation_errors,
+                'tensor_split': weight_manager.get_tensor_split_string(config),
+                'config_summary': weight_manager.get_config_summary(config)
+            })
+            
+        except Exception as e:
+            logger.exception("Error validating weight distribution")
             return jsonify({'error': str(e)}), 500
 
     @api_bp.route('/', methods=['GET'])

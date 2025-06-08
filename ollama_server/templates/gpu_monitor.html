@@ -792,26 +792,232 @@ function openTensorSplitModal() {
     modal.show();
 }
 
-function generateTensorSplitSliders() {
-    // TODO: Implement tensor split sliders
+async function generateTensorSplitSliders() {
     const container = document.getElementById('tensor-split-sliders');
-    container.innerHTML = '<p class="text-muted">Tensor split controls will be implemented here</p>';
+    
+    try {
+        // Fetch current weight distribution configuration
+        const response = await fetch('/api/dashboard/weight-distribution');
+        if (!response.ok) throw new Error('Failed to fetch weight distribution');
+        
+        const config = await response.json();
+        
+        if (!config.gpus || config.gpus.length === 0) {
+            container.innerHTML = '<p class="text-muted">No GPU data available for tensor split configuration</p>';
+            return;
+        }
+        
+        let html = '';
+        config.gpus.forEach((gpu, index) => {
+            html += `
+                <div class="slider-container mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label for="gpu-${gpu.gpu_id}-split" class="form-label">
+                            <strong>GPU ${gpu.gpu_id}</strong> (${gpu.name})
+                        </label>
+                        <span class="badge bg-primary" id="gpu-${gpu.gpu_id}-value">${gpu.weight_percentage.toFixed(1)}%</span>
+                    </div>
+                    
+                    <input type="range" class="form-range weight-slider" 
+                           id="gpu-${gpu.gpu_id}-split" 
+                           min="0" max="100" step="0.1" 
+                           value="${gpu.weight_percentage}"
+                           data-gpu-id="${gpu.gpu_id}"
+                           oninput="updateTensorSplitValue(${gpu.gpu_id}, this.value)">
+                    
+                    <div class="row mt-2 small text-muted">
+                        <div class="col-4">Memory: ${DashboardUtils.formatBytes(gpu.memory_total * 1024 * 1024)}</div>
+                        <div class="col-4">Available: ${DashboardUtils.formatBytes(gpu.memory_available * 1024 * 1024)}</div>
+                        <div class="col-4">Temp: ${gpu.temperature}°C</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+        // Update current tensor config display
+        updateTensorConfigDisplay(config);
+        
+    } catch (error) {
+        console.error('Error generating tensor split sliders:', error);
+        container.innerHTML = '<p class="text-danger">Error loading tensor split configuration</p>';
+    }
 }
 
-function applyPreset(presetType) {
-    // TODO: Implement preset application
-    DashboardUtils.showToast(`Applied ${presetType} preset`, 'success');
+async function applyPreset(presetType) {
+    try {
+        const response = await fetch('/api/dashboard/weight-distribution', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                preset: presetType
+            })
+        });
+        
+        if (!response.ok) throw new Error('Failed to apply preset');
+        
+        const result = await response.json();
+        DashboardUtils.showToast(`Applied ${result.message}`, 'success');
+        
+        // Refresh the sliders
+        await generateTensorSplitSliders();
+        
+    } catch (error) {
+        console.error('Error applying preset:', error);
+        DashboardUtils.showToast('Failed to apply preset', 'danger');
+    }
 }
 
-function resetToDefaults() {
-    // TODO: Implement reset functionality
-    DashboardUtils.showToast('Reset to default configuration', 'info');
+async function resetToDefaults() {
+    try {
+        await applyPreset('equal');
+        DashboardUtils.showToast('Reset to equal distribution', 'info');
+    } catch (error) {
+        console.error('Error resetting to defaults:', error);
+        DashboardUtils.showToast('Failed to reset configuration', 'danger');
+    }
 }
 
-function applyTensorSplitConfiguration() {
-    // TODO: Implement configuration application
-    DashboardUtils.showToast('Tensor split configuration applied', 'success');
-    bootstrap.Modal.getInstance(document.getElementById('tensorSplitModal')).hide();
+async function applyTensorSplitConfiguration() {
+    try {
+        // Collect current slider values
+        const sliders = document.querySelectorAll('.weight-slider');
+        const gpu_weights = [];
+        
+        sliders.forEach(slider => {
+            gpu_weights.push({
+                gpu_id: parseInt(slider.dataset.gpuId),
+                weight: parseFloat(slider.value)
+            });
+        });
+        
+        // Validate first
+        const validateResponse = await fetch('/api/dashboard/weight-distribution/validate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                gpu_weights: gpu_weights
+            })
+        });
+        
+        if (!validateResponse.ok) throw new Error('Validation failed');
+        
+        const validation = await validateResponse.json();
+        
+        if (!validation.is_valid) {
+            DashboardUtils.showToast(`Validation failed: ${validation.validation_errors.join(', ')}`, 'danger');
+            return;
+        }
+        
+        // Apply configuration
+        const applyResponse = await fetch('/api/dashboard/weight-distribution', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                gpu_weights: gpu_weights
+            })
+        });
+        
+        if (!applyResponse.ok) throw new Error('Failed to apply configuration');
+        
+        const result = await applyResponse.json();
+        DashboardUtils.showToast('Tensor split configuration applied successfully', 'success');
+        
+        // Update the main visualization
+        updateTensorSplitVisualization({ gpus: result.config.gpus });
+        
+        bootstrap.Modal.getInstance(document.getElementById('tensorSplitModal')).hide();
+        
+    } catch (error) {
+        console.error('Error applying tensor split configuration:', error);
+        DashboardUtils.showToast('Failed to apply configuration', 'danger');
+    }
+}
+
+async function updateTensorSplitValue(gpuIndex, value) {
+    // Update the display value
+    document.getElementById(`gpu-${gpuIndex}-value`).textContent = parseFloat(value).toFixed(1) + '%';
+    
+    // Real-time validation
+    try {
+        const sliders = document.querySelectorAll('.weight-slider');
+        const gpu_weights = [];
+        
+        sliders.forEach(slider => {
+            const gpuId = parseInt(slider.dataset.gpuId);
+            const weight = gpuId === gpuIndex ? parseFloat(value) : parseFloat(slider.value);
+            gpu_weights.push({ gpu_id: gpuId, weight: weight });
+        });
+        
+        const response = await fetch('/api/dashboard/weight-distribution/validate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                gpu_weights: gpu_weights
+            })
+        });
+        
+        if (response.ok) {
+            const validation = await response.json();
+            updateValidationStatus(validation);
+            updateTensorConfigDisplay(validation.config_summary);
+        }
+        
+    } catch (error) {
+        console.error('Error validating tensor split:', error);
+    }
+}
+
+function updateValidationStatus(validation) {
+    const container = document.getElementById('validation-status');
+    
+    if (validation.is_valid) {
+        container.className = 'alert alert-success';
+        container.innerHTML = `
+            <i class="bi bi-check-circle"></i>
+            Configuration is valid
+            <br><small>Tensor split: ${validation.tensor_split}</small>
+        `;
+    } else {
+        container.className = 'alert alert-danger';
+        container.innerHTML = `
+            <i class="bi bi-exclamation-triangle"></i>
+            Validation errors:
+            <ul class="mb-0 mt-2">
+                ${validation.validation_errors.map(error => `<li>${error}</li>`).join('')}
+            </ul>
+        `;
+    }
+}
+
+function updateTensorConfigDisplay(config) {
+    const container = document.getElementById('current-tensor-config');
+    
+    if (!config) {
+        container.textContent = 'No configuration available';
+        return;
+    }
+    
+    const configText = `
+Tensor Split: ${config.tensor_split || 'N/A'}
+GPU Count: ${config.gpu_count || 0}
+Model: ${config.model_name || 'None'}
+Context Size: ${config.context_size || 4096}
+GPU Layers: ${config.gpu_layers || 999}
+Batch Size: ${config.batch_size || 512}
+Status: ${config.is_valid ? 'Valid' : 'Invalid'}
+    `.trim();
+    
+    container.textContent = configText;
 }
 </script>
 {% endblock %}
