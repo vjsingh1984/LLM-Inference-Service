@@ -189,16 +189,16 @@ curl -X POST http://localhost:11435/api/chat/completions \
 === Dashboard Features
 
 .LLM Inference Service - Main Dashboard
-image::llm-service-main-dashboard.png[Main Dashboard,1200,800]
+image::images/llm-service-main-dashboard.png[Main Dashboard,1200,800]
 
 .GPU Monitor Dashboard
-image::llm-service-main-gpudetail.png[GPU Monitor,1200,800]
+image::images/llm-service-main-gpudetail.png[GPU Monitor,1200,800]
 
 .Configuration Panel
-image::llm-service-main-configset.png[Configuration Panel,1200,800]
+image::images/llm-service-main-configset.png[Configuration Panel,1200,800]
 
 .Hardware Optimization Dashboard
-image::optimization-dashboard-screenshot.png[Optimization Dashboard,1200,800]
+image::images/optimization-dashboard-screenshot.png[Optimization Dashboard,1200,800]
 
 **Key Features:**
 * Real-time GPU monitoring (4x Tesla M10)
