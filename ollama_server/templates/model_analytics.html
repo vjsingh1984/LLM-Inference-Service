@@ -481,6 +481,9 @@ async function refreshModelData() {
         console.log('Model data received:', data);
         modelData = data;
         
+        // Store data globally for use in calculations
+        window.dashboardData = data;
+        
         if (!data.models || data.models.length === 0) {
             console.warn('No models found in response');
         } else {
@@ -576,13 +579,19 @@ function updateContextAnalysis(models) {
     let labels = [];
     
     models.forEach(model => {
-        // Simulate context length detection (in real implementation, this would come from model inspection)
-        const reportedLength = 4096; // Default reported length
-        const detectedLength = Math.floor(Math.random() * (131072 - 4096) + 4096); // Simulated detection
-        const improvement = ((detectedLength - reportedLength) / reportedLength * 100).toFixed(1);
+        // Use actual model metadata for context lengths
+        const modelInfo = model.model_info || {};
+        const reportedLength = model.context_size || 4096;
+        const detectedLength = modelInfo['general.context_length'] || 
+                              modelInfo['llama.context_length'] || 
+                              modelInfo['phi.context_length'] || 
+                              reportedLength;
         
-        const statusClass = detectedLength > reportedLength ? 'bg-success' : 'bg-warning';
-        const statusText = detectedLength > reportedLength ? 'Improved' : 'Verified';
+        const improvement = detectedLength > reportedLength ? 
+            ((detectedLength - reportedLength) / reportedLength * 100).toFixed(1) : 0;
+        
+        const statusClass = detectedLength > reportedLength ? 'bg-success' : 'bg-secondary';
+        const statusText = detectedLength > reportedLength ? 'Enhanced' : 'Standard';
         
         html += `
             <tr>
@@ -590,7 +599,7 @@ function updateContextAnalysis(models) {
                 <td>${DashboardUtils.formatNumber(reportedLength)}</td>
                 <td>${DashboardUtils.formatNumber(detectedLength)}</td>
                 <td><span class="badge ${statusClass}">${statusText}</span></td>
-                <td class="text-success">+${improvement}%</td>
+                <td class="${improvement > 0 ? 'text-success' : 'text-muted'}">${improvement > 0 ? '+' + improvement + '%' : 'No enhancement'}</td>
             </tr>
         `;
         
@@ -613,10 +622,22 @@ function updateContextAnalysis(models) {
 }
 
 function updatePerformanceMetrics(data) {
-    // Simulate performance metrics (in real implementation, this would come from request tracking)
-    DashboardUtils.updateElementSafely('avg-tokens-per-sec', Math.floor(Math.random() * 50 + 10));
-    DashboardUtils.updateElementSafely('avg-response-time', Math.floor(Math.random() * 2000 + 500) + 'ms');
-    DashboardUtils.updateElementSafely('total-requests', Math.floor(Math.random() * 1000 + 100));
+    // Calculate real performance metrics from request data
+    const requests = data.requests || [];
+    const completedRequests = requests.filter(r => r.status === 'completed');
+    
+    if (completedRequests.length > 0) {
+        const avgTokensPerSec = completedRequests.reduce((sum, r) => sum + (r.generated_tokens_per_second || 0), 0) / completedRequests.length;
+        const avgResponseTime = completedRequests.reduce((sum, r) => sum + (r.duration || 0), 0) / completedRequests.length;
+        
+        DashboardUtils.updateElementSafely('avg-tokens-per-sec', Math.round(avgTokensPerSec * 10) / 10);
+        DashboardUtils.updateElementSafely('avg-response-time', Math.round(avgResponseTime * 1000) + 'ms');
+    } else {
+        DashboardUtils.updateElementSafely('avg-tokens-per-sec', 0);
+        DashboardUtils.updateElementSafely('avg-response-time', '0ms');
+    }
+    
+    DashboardUtils.updateElementSafely('total-requests', requests.length);
 }
 
 function updateModelCharts(models) {
@@ -624,7 +645,16 @@ function updateModelCharts(models) {
     
     // Update performance chart
     const modelNames = models.map(m => m.name.substring(0, 15) + '...');
-    const tokensPerSec = models.map(m => Math.floor(Math.random() * 50 + 10)); // Simulated data
+    // Calculate real tokens per second from completed requests for each model
+    const tokensPerSec = models.map(model => {
+        const modelRequests = (window.dashboardData?.requests || []).filter(r => 
+            r.model === model.name && r.status === 'completed' && r.generated_tokens_per_second > 0
+        );
+        if (modelRequests.length > 0) {
+            return Math.round(modelRequests.reduce((sum, r) => sum + r.generated_tokens_per_second, 0) / modelRequests.length);
+        }
+        return 0;
+    });
     
     if (performanceChart && performanceChart.data) {
         performanceChart.data.labels = modelNames;
@@ -634,12 +664,20 @@ function updateModelCharts(models) {
         console.warn('performanceChart not initialized yet');
     }
     
-    // Update memory efficiency chart (scatter plot)
-    const scatterData = models.map((model, index) => ({
-        x: getModelParameterCount(model.details?.parameter_size || '7B'), // Convert to numeric
-        y: Math.floor(Math.random() * 20 + 5), // Simulated memory usage in GB
-        label: model.name
-    }));
+    // Update memory efficiency chart with real data
+    const scatterData = models.map((model, index) => {
+        const modelRequests = (window.dashboardData?.requests || []).filter(r => 
+            r.model === model.name && r.status === 'completed'
+        );
+        const avgPerformance = modelRequests.length > 0 ? 
+            modelRequests.reduce((sum, r) => sum + (r.generated_tokens_per_second || 0), 0) / modelRequests.length : 0;
+        
+        return {
+            x: getModelParameterCount(model.details?.parameter_size || '7B'),
+            y: Math.round(avgPerformance), // Real performance in tokens/sec
+            label: model.name
+        };
+    });
     
     if (memoryChart && memoryChart.data) {
         memoryChart.data.datasets[0].data = scatterData;
@@ -648,8 +686,11 @@ function updateModelCharts(models) {
         console.warn('memoryChart not initialized yet');
     }
     
-    // Update model usage chart
-    const usageData = models.map(m => Math.floor(Math.random() * 100 + 10));
+    // Update model usage chart with real request counts
+    const usageData = models.map(model => {
+        const modelRequests = (window.dashboardData?.requests || []).filter(r => r.model === model.name);
+        return modelRequests.length;
+    });
     if (usageChart && usageChart.data) {
         usageChart.data.labels = modelNames;
         usageChart.data.datasets[0].data = usageData;
@@ -663,17 +704,28 @@ function updateModelCharts(models) {
 }
 
 function updateTrendsChart() {
-    // Simulate hourly trends for the last 24 hours
+    // Use real data or show zeros if no historical data available
     const hours = [];
     const requests = [];
     const latency = [];
     
+    // For now, show last 24 hours with real current data or zeros
     for (let i = 23; i >= 0; i--) {
         const hour = new Date();
         hour.setHours(hour.getHours() - i);
         hours.push(hour.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
-        requests.push(Math.floor(Math.random() * 50 + 10));
-        latency.push(Math.floor(Math.random() * 1000 + 200));
+        
+        // Only show current hour data, rest as zeros until we implement historical tracking
+        if (i === 0 && window.dashboardData?.requests) {
+            const currentRequests = window.dashboardData.requests.length;
+            const avgLatency = window.dashboardData.requests.length > 0 ? 
+                window.dashboardData.requests.reduce((sum, r) => sum + (r.duration || 0), 0) / window.dashboardData.requests.length * 1000 : 0;
+            requests.push(currentRequests);
+            latency.push(Math.round(avgLatency));
+        } else {
+            requests.push(0);
+            latency.push(0);
+        }
     }
     
     if (trendsChart && trendsChart.data) {
@@ -696,11 +748,28 @@ function updateDetailedModelTable(models) {
     
     let html = '';
     models.forEach((model, index) => {
-        const performance = Math.floor(Math.random() * 50 + 10); // Simulated tokens/sec
-        const gpuAllocation = ['GPU 0', 'GPU 1', 'GPU 0,1'][Math.floor(Math.random() * 3)];
-        const status = ['Active', 'Idle', 'Loading'][Math.floor(Math.random() * 3)];
+        // Calculate real performance from completed requests
+        const modelRequests = (window.dashboardData?.requests || []).filter(r => 
+            r.model === model.name && r.status === 'completed' && r.generated_tokens_per_second > 0
+        );
+        const performance = modelRequests.length > 0 ? 
+            Math.round(modelRequests.reduce((sum, r) => sum + r.generated_tokens_per_second, 0) / modelRequests.length) : 0;
+        
+        // Determine actual status based on recent requests
+        const recentRequests = (window.dashboardData?.requests || []).filter(r => r.model === model.name);
+        const activeRequests = recentRequests.filter(r => r.status === 'generating' || r.status === 'processing');
+        
+        const status = activeRequests.length > 0 ? 'Active' : 
+                      recentRequests.length > 0 ? 'Recent' : 'Available';
         const statusClass = status === 'Active' ? 'bg-success' : 
-                           status === 'Idle' ? 'bg-warning' : 'bg-info';
+                           status === 'Recent' ? 'bg-warning' : 'bg-secondary';
+        
+        // GPU allocation - for now show 'Multi-GPU' or 'Unknown'
+        const gpuAllocation = 'Multi-GPU';
+        
+        // Calculate average response time
+        const avgResponseTime = modelRequests.length > 0 ? 
+            Math.round(modelRequests.reduce((sum, r) => sum + (r.duration || 0), 0) / modelRequests.length * 1000) : 0;
         
         html += `
             <tr>
@@ -712,13 +781,13 @@ function updateDetailedModelTable(models) {
                 <td>
                     <span class="badge bg-secondary">${model.details?.quantization_level || 'Unknown'}</span>
                 </td>
-                <td>${Math.floor(Math.random() * 128) + 4}K</td>
+                <td>${model.context_size ? Math.round(model.context_size / 1024) + 'K' : 'Unknown'}</td>
                 <td>
                     <span class="badge bg-info">${gpuAllocation}</span>
                 </td>
                 <td>
-                    <strong>${performance}</strong> tok/s<br>
-                    <small class="text-muted">${Math.floor(Math.random() * 2000 + 500)}ms avg</small>
+                    <strong>${performance > 0 ? performance : 'No data'}</strong> ${performance > 0 ? 'tok/s' : ''}<br>
+                    <small class="text-muted">${avgResponseTime > 0 ? avgResponseTime + 'ms avg' : 'No data'}</small>
                 </td>
                 <td>
                     <span class="badge ${statusClass}">${status}</span>
