@@ -1,0 +1,36 @@
+{
+  "diagrams": [
+    {
+      "name": "architecture_overview",
+      "type": "graph",
+      "title": "LLM Inference Service Architecture",
+      "description": "Complete system architecture showing multi-API compatibility and real-time monitoring",
+      "mermaid": "graph TD\n    subgraph \"Client Layer\"\n        A[OpenAI Client]\n        B[Ollama Client] \n        C[vLLM Client]\n        D[HuggingFace Client]\n        E[Web Dashboard]\n    end\n    \n    subgraph \"API Gateway Layer\"\n        F[LLM Inference Service]\n        G[Real-time Dashboard]\n        H[API Health Monitor]\n    end\n    \n    subgraph \"Processing Layer\"\n        I[Request Tracker]\n        J[Model Manager]\n        K[LLAMA Executor]\n        L[Response Processor]\n    end\n    \n    subgraph \"Monitoring Layer\"\n        M[GPU Monitor]\n        N[Weight Distribution Manager]\n        O[API Metrics Tracker]\n        P[Model Inspector]\n    end\n    \n    subgraph \"Hardware Layer\"\n        Q[Tesla M10 GPU 0<br/>8GB VRAM]\n        R[Tesla M10 GPU 1<br/>8GB VRAM]\n        S[Tesla M10 GPU 2<br/>8GB VRAM]\n        T[Tesla M10 GPU 3<br/>8GB VRAM]\n    end\n    \n    subgraph \"Model Storage\"\n        U[52 Models<br/>GGUF Format]\n        V[Context Sizes<br/>4K-128K]\n        W[Quantization<br/>Q4_K_M to F16]\n    end\n    \n    A --> F\n    B --> F\n    C --> F\n    D --> F\n    E --> G\n    \n    F --> I\n    F --> J\n    I --> K\n    J --> K\n    K --> L\n    \n    G --> M\n    G --> N\n    G --> O\n    J --> P\n    \n    K --> Q\n    K --> R\n    K --> S\n    K --> T\n    \n    J --> U\n    J --> V\n    J --> W\n    \n    M --> Q\n    M --> R\n    M --> S\n    M --> T\n    \n    N --> Q\n    N --> R\n    N --> S\n    N --> T",
+      "outputFile": "images/architecture.png"
+    },
+    {
+      "name": "dashboard_flow",
+      "type": "graph",
+      "title": "Dashboard Data Flow",
+      "description": "Real-time dashboard system with live GPU monitoring and API metrics",
+      "mermaid": "graph LR\n    subgraph \"Data Sources\"\n        A[nvidia-ml-py<br/>GPU Metrics]\n        B[Request Tracker<br/>Active Requests]\n        C[Model Manager<br/>52 Models]\n        D[API Metrics<br/>Endpoint Stats]\n    end\n    \n    subgraph \"Processing\"\n        E[GPU Monitor<br/>15s Refresh]\n        F[Weight Manager<br/>Tensor Split]\n        G[Model Inspector<br/>Context Detection]\n        H[API Tracker<br/>Real Usage]\n    end\n    \n    subgraph \"Dashboard Views\"\n        I[Main Dashboard<br/>http://host:11436/dashboard]\n        J[GPU Monitor<br/>http://host:11436/dashboard/gpu]\n        K[Model Analytics<br/>http://host:11436/dashboard/models]\n        L[API Health<br/>http://host:11436/dashboard/apis]\n    end\n    \n    subgraph \"Live Features\"\n        M[Real-time Charts<br/>Chart.js]\n        N[Interactive Config<br/>Tensor Splits]\n        O[Live Alerts<br/>Temp/Memory]\n        P[Usage Analytics<br/>Response Times]\n    end\n    \n    A --> E\n    B --> E\n    C --> G\n    D --> H\n    \n    E --> I\n    F --> I\n    G --> I\n    H --> I\n    \n    I --> J\n    I --> K\n    I --> L\n    \n    J --> M\n    J --> N\n    K --> O\n    L --> P",
+      "outputFile": "images/dashboard_flow.png"
+    },
+    {
+      "name": "api_compatibility",
+      "type": "graph",
+      "title": "Multi-API Compatibility Matrix",
+      "description": "Unified service supporting multiple API formats with real endpoint tracking",
+      "mermaid": "graph TB\n    subgraph \"API Formats\"\n        A[OpenAI API<br/>/v1/chat/completions]\n        B[Ollama Chat<br/>/api/chat]\n        C[Ollama Generate<br/>/api/generate]\n        D[vLLM API<br/>/v1/completions]\n        E[HuggingFace TGI<br/>/generate]\n    end\n    \n    subgraph \"Format Adapters\"\n        F[OpenAI Adapter<br/>JSON Schema]\n        G[Ollama Chat Adapter<br/>Think Tags]\n        H[Ollama Generate Adapter<br/>Legacy Support]\n        I[vLLM Adapter<br/>OpenAI Compatible]\n        J[HF Adapter<br/>TGI Format]\n    end\n    \n    subgraph \"Core Engine\"\n        K[Request Handler<br/>Unified Processing]\n        L[LLAMA Executor<br/>llama.cpp Backend]\n        M[Response Processor<br/>Format-aware Output]\n    end\n    \n    subgraph \"Real Tracking\"\n        N[API Metrics<br/>Response Times]\n        O[Success Rates<br/>Error Tracking]\n        P[Usage Stats<br/>Requests/Min]\n    end\n    \n    A --> F\n    B --> G\n    C --> H\n    D --> I\n    E --> J\n    \n    F --> K\n    G --> K\n    H --> K\n    I --> K\n    J --> K\n    \n    K --> L\n    L --> M\n    \n    K --> N\n    K --> O\n    K --> P",
+      "outputFile": "images/api_compatibility.png"
+    },
+    {
+      "name": "gpu_utilization",
+      "type": "graph", 
+      "title": "Multi-GPU Utilization Strategy",
+      "description": "Intelligent tensor splitting across consumer GPUs with real-time monitoring",
+      "mermaid": "graph TD\n    subgraph \"Weight Distribution Strategies\"\n        A[Equal Split<br/>25% each GPU]\n        B[Memory Based<br/>Available VRAM]\n        C[Performance Based<br/>Utilization + Memory]\n        D[Primary/Secondary<br/>70/30 Split]\n    end\n    \n    subgraph \"Current System Status\"\n        E[GPU 0: Tesla M10<br/>72°C, 56% Util, 5.8GB Free]\n        F[GPU 1: Tesla M10<br/>66°C, 32% Util, 5.9GB Free]\n        G[GPU 2: Tesla M10<br/>40°C, 38% Util, 5.9GB Free]\n        H[GPU 3: Tesla M10<br/>52°C, 0% Util, 5.7GB Free]\n    end\n    \n    subgraph \"Tensor Configuration\"\n        I[Active Split<br/>0.250,0.250,0.250,0.250]\n        J[Context Size<br/>4096-131072 tokens]\n        K[Batch Size<br/>512 default]\n        L[GPU Layers<br/>999 all offloaded]\n    end\n    \n    subgraph \"Live Monitoring\"\n        M[Temperature Alerts<br/>80°C Warning, 85°C Critical]\n        N[Memory Validation<br/>Model Size vs Available]\n        O[Power Monitoring<br/>Current vs Limit]\n        P[Real-time Updates<br/>15-second refresh]\n    end\n    \n    A --> I\n    B --> I\n    C --> I\n    D --> I\n    \n    E --> I\n    F --> I\n    G --> I\n    H --> I\n    \n    I --> J\n    I --> K\n    I --> L\n    \n    E --> M\n    F --> M\n    G --> M\n    H --> M\n    \n    I --> N\n    I --> O\n    M --> P\n    N --> P\n    O --> P",
+      "outputFile": "images/gpu_utilization.png"
+    }
+  ]
+}
