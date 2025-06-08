@@ -205,12 +205,13 @@
                                         <th>Progress</th>
                                         <th>Start Time</th>
                                         <th>Duration</th>
-                                        <th>Throughput</th>
+                                        <th>Total Throughput</th>
+                                        <th>Gen Throughput</th>
                                     </tr>
                                 </thead>
                                 <tbody id="requests-table-body">
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted">
+                                        <td colspan="9" class="text-center text-muted">
                                             No active requests
                                         </td>
                                     </tr>
@@ -539,7 +540,7 @@ function updateActiveRequests() {
     if (requests.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center text-muted">No active requests</td>
+                <td colspan="9" class="text-center text-muted">No active requests</td>
             </tr>
         `;
         return;
@@ -562,14 +563,24 @@ function updateActiveRequests() {
             durationDisplay = `${liveDuration}s`;
         }
         
-        // Format throughput
-        let throughputDisplay = '';
-        if (req.tokens_per_second > 0) {
-            throughputDisplay = `${req.tokens_per_second.toFixed(1)} tok/s`;
+        // Format total throughput (prompt + generated)
+        let totalThroughputDisplay = '';
+        if (req.total_tokens_per_second > 0) {
+            totalThroughputDisplay = `${req.total_tokens_per_second.toFixed(1)} tok/s`;
         } else if (req.status === 'completed' || req.status === 'error') {
-            throughputDisplay = '0.0 tok/s';
+            totalThroughputDisplay = '0.0 tok/s';
         } else {
-            throughputDisplay = '-';
+            totalThroughputDisplay = '-';
+        }
+        
+        // Format generated throughput (generated only)
+        let genThroughputDisplay = '';
+        if (req.generated_tokens_per_second > 0) {
+            genThroughputDisplay = `${req.generated_tokens_per_second.toFixed(1)} tok/s`;
+        } else if (req.status === 'completed' || req.status === 'error') {
+            genThroughputDisplay = '0.0 tok/s';
+        } else {
+            genThroughputDisplay = '-';
         }
         
         html += `
@@ -587,7 +598,8 @@ function updateActiveRequests() {
                 </td>
                 <td>${startTime.toLocaleTimeString()}</td>
                 <td>${durationDisplay}</td>
-                <td><small class="text-muted">${throughputDisplay}</small></td>
+                <td><small class="text-muted">${totalThroughputDisplay}</small></td>
+                <td><small class="text-muted">${genThroughputDisplay}</small></td>
             </tr>
         `;
     });

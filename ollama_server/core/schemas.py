@@ -59,9 +59,18 @@ class RequestStatus:
         return self.last_update - self.start_time
     
     @property
-    def tokens_per_second(self) -> float:
-        """Calculate tokens per second throughput"""
+    def total_tokens_per_second(self) -> float:
+        """Calculate total tokens per second (prompt + generated)"""
         duration = self.duration
-        if duration > 0 and self.actual_tokens > 0:
+        total_tokens = self.prompt_tokens + self.actual_tokens  # prompt + generated
+        if duration > 0 and total_tokens > 0:
+            return total_tokens / duration
+        return 0.0
+    
+    @property
+    def generated_tokens_per_second(self) -> float:
+        """Calculate generated tokens per second (output only)"""
+        duration = self.duration
+        if duration > 0 and self.actual_tokens > 0:  # actual_tokens is generated tokens
             return self.actual_tokens / duration
         return 0.0

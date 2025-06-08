@@ -189,7 +189,7 @@ class LLAMAExecutor:
                     logger.error(f"[{request.request_id}] {err_detail}")
                     self.request_tracker.update_request(request.request_id, status='error', error=err_detail, output=full_output, actual_tokens=actual_gen_tokens)
                 else:
-                    logger.info(f"[{request.request_id}] Streaming completed successfully. Output len: {len(full_output)}, Estimated tokens: {actual_gen_tokens}")
+                    logger.info(f"[{request.request_id}] Streaming completed successfully. Output len: {len(full_output)}, Generated tokens: {actual_gen_tokens}")
                     self.request_tracker.update_request(request.request_id, status='completed', output=full_output, progress=request.max_tokens, actual_tokens=actual_gen_tokens)
             elif final_status_obj:
                  logger.info(f"[{request.request_id}] Streaming ended (already in error state: {final_status_obj.error}). Output len: {len(full_output)}")
@@ -228,7 +228,7 @@ class LLAMAExecutor:
                 self.request_tracker.update_request(request.request_id, status='error', error=err_detail, output=full_output, actual_tokens=actual_gen_tokens)
                 return full_output, err_detail
             else:
-                logger.info(f"[{request.request_id}] Non-streaming completed successfully. Output len: {len(full_output)}, Estimated tokens: {actual_gen_tokens}")
+                logger.info(f"[{request.request_id}] Non-streaming completed successfully. Output len: {len(full_output)}, Generated tokens: {actual_gen_tokens}")
                 self.request_tracker.update_request(request.request_id, status='completed', output=full_output, progress=request.max_tokens, actual_tokens=actual_gen_tokens)
                 return full_output, None
         except subprocess.TimeoutExpired as e_timeout:

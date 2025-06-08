@@ -384,8 +384,10 @@ def create_routes(model_manager, request_tracker, llama_executor, config):
                     'total': req_status.total,
                     'start_time': req_status.start_time,
                     'duration': req_status.duration,
-                    'tokens_per_second': req_status.tokens_per_second,
-                    'actual_tokens': req_status.actual_tokens,
+                    'total_tokens_per_second': req_status.total_tokens_per_second,
+                    'generated_tokens_per_second': req_status.generated_tokens_per_second,
+                    'actual_tokens': req_status.actual_tokens,  # This is generated tokens
+                    'prompt_tokens': req_status.prompt_tokens,
                     'api_format': getattr(req_status, 'api_format', 'unknown')
                 })
             
